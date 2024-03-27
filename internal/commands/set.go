@@ -4,20 +4,14 @@ import (
 	"bytes"
 	"log"
 	"net"
+
+	"pedis/internal/response"
+	"pedis/internal/storage"
 )
 
-type ArrayHandler struct{}
+type ObjectHandler struct{}
 
-type HelloResponse struct {
-	Server  string
-	Version string
-	Mode    string
-	Proto   uint8
-	Id      uint8
-	Role    string
-}
-
-func (s ArrayHandler) Run(data []byte, conn net.Conn) {
+func (s ObjectHandler) Run(data []byte, conn net.Conn, store storage.Storage) {
 	//	log.Println("raw data", data)
 	//	log.Println("string data", string(data))
 	log.Println("received request, payload size=", len(data), string(data[0]))
@@ -28,45 +22,29 @@ func (s ArrayHandler) Run(data []byte, conn net.Conn) {
 	switch string(items[2]) {
 	case "hello":
 		log.Println("Respond to hello command")
-		buf := bytes.Buffer{}
+		hr := response.HelloResponse{
+			Server:  "redis",
+			Version: "6.2.1",
+			Mode:    "standalone",
+			Proto:   3,
+			Role:    "master",
+		}
 
-		buf.Write([]byte("%"))
-		buf.Write([]byte("6"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+server"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+redis"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+version"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+6.2.11"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+proto"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte(":3"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+id"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte(":1"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+mode"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+standalone"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+role"))
-		buf.Write([]byte{13, 10})
-		buf.Write([]byte("+master"))
-		buf.Write([]byte{13, 10})
-
-		n, err := conn.Write(buf.Bytes())
+		_, err := conn.Write(hr.Render())
 
 		if err != nil {
 			log.Println(err)
 		}
-
-		log.Println("Wrote", n, "bytes")
 	case "set":
 		log.Println("going to execute set command")
+		log.Println(string(items[0]), string(items[1]), string(items[2]), string(items[3]), string(items[4]), string(items[5]), string(items[6]))
+		err := store.Set(string(items[4]), string(items[6]))
+
+		if err != nil {
+			conn.Write([]byte("-ERR error\r\n"))
+		}
+
+		conn.Write([]byte("+OK\r\n"))
 	case "client":
 		log.Println("going to execute client options command")
 	default:

@@ -16,7 +16,7 @@ func main() {
 		DB:       0,
 	})
 	log.Println(client.Conn())
-	err := client.Set(context.Background(), "foo", "bar", 0).Err()
+	err := client.Set(context.Background(), "key", "value", 0).Err()
 	if err != nil {
 		log.Println(err)
 	}
