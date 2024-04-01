@@ -48,4 +48,9 @@ func TestServerSetAndGet(t *testing.T) {
 		err = client.Set(context.Background(), "", "value", 0).Err()
 		assert.Equal(t, err.Error(), "ERR key is empty")
 	})
+
+	t.Run("Cannot get a key that does not exist", func(t *testing.T) {
+		_, err := client.Get(context.Background(), "key:not:found").Result()
+		assert.Equal(t, err.Error(), "ERR key not found")
+	})
 }
