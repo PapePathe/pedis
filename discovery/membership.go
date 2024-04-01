@@ -69,7 +69,6 @@ func (m *Membership) eventHandler() {
 
 		case serf.EventMemberJoin:
 			for _, member := range e.(serf.MemberEvent).Members {
-				slog.Debug("debug local member", m.isLocal(member))
 				if m.isLocal(member) {
 					continue
 				}
@@ -84,7 +83,6 @@ func (m *Membership) eventHandler() {
 				m.handleLeave(member)
 			}
 		case serf.EventMemberFailed:
-			slog.Error("Member failed", e.String())
 		}
 	}
 }

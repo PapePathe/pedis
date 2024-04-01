@@ -6,8 +6,13 @@ import (
 	"time"
 )
 
+type datatype struct {
+	t    rune
+	data []byte
+}
+
 type SimpleStorage struct {
-	data    map[string]string
+	data    map[string]datatype
 	exp     map[string]time.Time
 	expLock sync.RWMutex
 	sync.RWMutex
@@ -15,14 +20,14 @@ type SimpleStorage struct {
 
 func NewSimpleStorage() *SimpleStorage {
 	return &SimpleStorage{
-		data: make(map[string]string),
+		data: make(map[string]datatype),
 		exp:  make(map[string]time.Time),
 	}
 }
 
 func (ss *SimpleStorage) Set(key string, value string, expires int64) error {
 	ss.Lock()
-	ss.data[key] = value
+	ss.data[key] = datatype{t: 's', data: []byte(value)}
 	ss.Unlock()
 
 	if expires > 0 {
@@ -44,5 +49,5 @@ func (ss *SimpleStorage) Get(key string) (string, error) {
 		return "", errors.New("key not found")
 	}
 
-	return v, nil
+	return string(v.data), nil
 }
