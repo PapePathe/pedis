@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"sync"
 	"time"
 )
@@ -36,5 +37,11 @@ func (ss *SimpleStorage) Set(key string, value string, expires int64) error {
 func (ss *SimpleStorage) Get(key string) (string, error) {
 	ss.RLock()
 	defer ss.RUnlock()
-	return ss.data[key], nil
+
+	v, ok := ss.data[key]
+	if !ok {
+		return "", errors.New("key not found")
+	}
+
+	return v, nil
 }
