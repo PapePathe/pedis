@@ -39,6 +39,7 @@ func (ss *SimpleStorage) Get(key string) (string, error) {
 	defer ss.RUnlock()
 
 	v, ok := ss.data[key]
+
 	if !ok {
 		return "", errors.New("key not found")
 	}
