@@ -4,6 +4,7 @@ import (
 	"context"
 	"pedis/internal/storage"
 	"testing"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,11 @@ func TestServerSetAndGet(t *testing.T) {
 		Addr:     "localhost:6379",
 		Password: "",
 		DB:       0,
+	})
+
+	t.Run("Can set a value with expiration date", func(t *testing.T) {
+		err = client.Set(context.Background(), "key", "value", 2*time.Minute).Err()
+		require.NoError(t, err)
 	})
 
 	t.Run("Can set a value and retrieve it", func(t *testing.T) {
