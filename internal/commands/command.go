@@ -29,6 +29,8 @@ func (s RequestHandler) Run(data []byte, conn net.Conn, store storage.Storage) {
 		GetHandler(items, store, conn)
 	case "set":
 		SetHandler(items, store, conn)
+	case "hset":
+		go HSetHandler(items[2:], store, conn)
 	case "client":
 		log.Println("going to execute client options command")
 	default:

@@ -13,9 +13,7 @@ import (
 
 func TestServerSetAndGet(t *testing.T) {
 	s, err := NewRedisServer(storage.NewSimpleStorage(), Config{ServerAddr: "localhost:6379"})
-
 	require.NoError(t, err)
-
 	go s.Start()
 
 	client := redis.NewClient(&redis.Options{
@@ -52,5 +50,25 @@ func TestServerSetAndGet(t *testing.T) {
 	t.Run("Cannot get a key that does not exist", func(t *testing.T) {
 		_, err := client.Get(context.Background(), "key:not:found").Result()
 		assert.Equal(t, err.Error(), "ERR key not found")
+	})
+}
+
+func TestServerHSetAndHGet(t *testing.T) {
+	s, err := NewRedisServer(storage.NewSimpleStorage(), Config{ServerAddr: "localhost:6379"})
+	require.NoError(t, err)
+	go s.Start()
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	t.Run("Can set and get a hash", func(t *testing.T) {
+		//	m := map[string]interface{}{"key-one": "one value", "key-two": "two value"}
+		//		err = client.HMSet(context.Background(), "myhash", m, 0).Err()
+		result, err := client.HSet(context.Background(), "user", "name", "Pathe", "country", "Senegal", 221).Result()
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), result)
 	})
 }

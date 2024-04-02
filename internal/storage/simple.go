@@ -51,3 +51,17 @@ func (ss *SimpleStorage) Get(key string) (string, error) {
 
 	return string(v.data), nil
 }
+
+func (ss *SimpleStorage) HSet(key string, value []byte, expires int64) (int, error) {
+	data := datatype{t: 'm', data: value}
+
+	ss.Lock()
+	ss.data[key] = data
+	ss.Unlock()
+
+	return 0, nil
+}
+
+func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
+	return []byte{}, nil
+}
