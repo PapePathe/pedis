@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-type StorageData struct {
-	K string
-	T rune
-	D []byte
-}
-
 type SimpleStorage struct {
 	data        map[string]StorageData
 	exp         map[string]time.Time
@@ -26,6 +20,20 @@ func NewSimpleStorage(proposeChan chan StorageData) *SimpleStorage {
 		exp:         make(map[string]time.Time),
 		proposeChan: proposeChan,
 	}
+}
+
+func (ss *SimpleStorage) HSet(key string, value []byte, expires int64) (int, error) {
+	data := StorageData{T: 'm', D: value}
+
+	ss.Lock()
+	ss.data[key] = data
+	ss.Unlock()
+
+	return 0, nil
+}
+
+func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
+	return []byte{}, nil
 }
 
 // Endpoint for redis SET command
