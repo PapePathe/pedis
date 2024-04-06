@@ -97,6 +97,4 @@ func TestServerSetAndGet(t *testing.T) {
 		_, err := client.Get(context.Background(), "key:not:found").Result()
 		assert.Equal(t, err.Error(), "ERR key not found")
 	})
-
-	close(storageProposeChan)
 }
