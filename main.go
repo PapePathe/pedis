@@ -1,56 +1,52 @@
+// Copyright 2015 The etcd Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
 	"flag"
-	"log"
-	"pedis/node"
+	"pedis/internal/storage"
+	"pedis/praft"
 	"strings"
+
+	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
-var addr string
-var raftAddr string
-var joinAddr string
-var startJoinAddrs string
-var id string
-var membershipAddr string
-var bootstrap bool
-
-func init() {
-	flag.StringVar(&membershipAddr, "serf-addr", "localhost:6359", "the address where the cluster membership server is listening")
-	flag.StringVar(&raftAddr, "raft-addr", "localhost:6389", "the address where the raft server is listening")
-	flag.StringVar(&addr, "addr", "localhost:6379", "the address where the server will listen")
-	flag.StringVar(&id, "id", "primary", "the unique id of the server in the cluster")
-	flag.StringVar(&joinAddr, "join-addr", "", "set address of the leader of the cluster")
-	flag.StringVar(&startJoinAddrs, "sjoin-addr", "", "set addresses of cluster members to join when starting")
-	flag.BoolVar(&bootstrap, "bootstrap", false, "start as bootstrap node")
-}
-
 func main() {
+	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
+	id := flag.Int("id", 1, "node ID")
+	kvport := flag.Int("port", 9121, "key-value server port")
+	join := flag.Bool("join", false, "join an existing cluster")
+	pedis := flag.String("pedis", ":6379", "port where pedis server is running")
 	flag.Parse()
 
-	joinAddrs := []string{}
+	proposeC := make(chan string)
+	defer close(proposeC)
 
-	if startJoinAddrs != "" {
-		joinAddrs = strings.Split(startJoinAddrs, ",")
-	}
+	confChangeC := make(chan raftpb.ConfChange)
+	defer close(confChangeC)
 
-	node, err := node.NewNode(node.Config{
-		Bootstrap:      bootstrap,
-		JoinAddr:       joinAddr,
-		RaftAddr:       raftAddr,
-		MembershipAddr: membershipAddr,
-		ServerAddr:     addr,
-		ServerId:       id,
-		StartJoinAddrs: joinAddrs,
-	})
+	storageProposeChan := make(chan storage.StorageData)
+	defer close(storageProposeChan)
 
-	if err != nil {
-		log.Fatalf("error creating node %v", err)
-	}
+	// raft provides a commit stream for the proposals from the http api
+	var kvs *praft.PedisServer
+	getSnapshot := func() ([]byte, error) { return kvs.GetSnapshot() }
+	commitC, errorC, snapshotterReady := praft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
 
-	err = node.Start()
+	kvs = praft.NewKVStore(<-snapshotterReady, proposeC, commitC, errorC, storage.NewSimpleStorage(storageProposeChan), *pedis, storageProposeChan)
 
-	if err != nil {
-		log.Fatalf("error starting pedis node %v", err)
-	}
+	// the key-value http handler will propose updates to raft
+	praft.ServeHTTPKVAPI(kvs, *kvport, confChangeC, errorC)
 }
