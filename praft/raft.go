@@ -98,8 +98,8 @@ func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, 
 		id:          id,
 		peers:       peers,
 		join:        join,
-		waldir:      fmt.Sprintf("tmp/pedis-%d", id),
-		snapdir:     fmt.Sprintf("tmp/pedis-%d-snap", id),
+		waldir:      fmt.Sprintf("/tmp/pedis-%d", id),
+		snapdir:     fmt.Sprintf("/tmp/pedis-%d-snap", id),
 		getSnapshot: getSnapshot,
 		snapCount:   defaultSnapshotCount,
 		stopc:       make(chan struct{}),
@@ -144,7 +144,7 @@ func (rc *raftNode) entriesToApply(ents []raftpb.Entry) (nents []raftpb.Entry) {
 	if rc.appliedIndex-firstIdx+1 < uint64(len(ents)) {
 		nents = ents[rc.appliedIndex-firstIdx+1:]
 	}
-	log.Println("entries to apply", nents)
+	log.Println("count of entries to apply =", len(nents))
 	return nents
 }
 
@@ -165,7 +165,6 @@ func (rc *raftNode) publishEntries(ents []raftpb.Entry) (<-chan struct{}, bool) 
 			}
 			s := string(ents[i].Data)
 			data = append(data, s)
-			log.Println("published entry", data)
 		case raftpb.EntryConfChange:
 			var cc raftpb.ConfChange
 			cc.Unmarshal(ents[i].Data)
@@ -428,7 +427,6 @@ func (rc *raftNode) serveChannels() {
 				if !ok {
 					rc.proposeC = nil
 				} else {
-					log.Println("read from propose channel", prop)
 					// blocks until accepted by raft state machine
 					rc.node.Propose(context.TODO(), []byte(prop))
 				}

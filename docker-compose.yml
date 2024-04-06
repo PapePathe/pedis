@@ -1,0 +1,32 @@
+services:
+  pedis-a:
+    build: .
+    environment:
+      ID: 1
+      PEDIS: :6379
+      PORT: 12380
+      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
+    ports:
+      - "6379:6379"
+  pedis-b:
+    environment:
+      ID: 2
+      PEDIS: :6379
+      PORT: 12380
+      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
+    build: .
+    depends_on:
+      - pedis-a
+    ports:
+      - "6389:6389"
+  pedis-c:
+    environment:
+      ID: 3
+      PEDIS: :6379
+      PORT: 12380
+      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
+    build: .
+    depends_on:
+      - pedis-a
+    ports:
+      - "6399:6399"

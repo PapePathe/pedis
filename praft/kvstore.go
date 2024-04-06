@@ -179,7 +179,6 @@ func (s *PedisServer) readCommits(commitC <-chan *commit, errorC <-chan error) {
 			if err != nil {
 				log.Println("error writing proposed change from raft", err)
 			}
-			log.Println("length of store", len(s.kvStore), data)
 		}
 		close(commit.applyDoneC)
 	}
