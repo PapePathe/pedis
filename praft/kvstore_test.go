@@ -54,7 +54,6 @@ import (
 
 func TestServerSetAndGet(t *testing.T) {
 	storageProposeChan := make(chan storage.StorageData)
-	defer close(storageProposeChan)
 
 	s := NewPedisServer(
 		"localhost:6379",
@@ -98,4 +97,6 @@ func TestServerSetAndGet(t *testing.T) {
 		_, err := client.Get(context.Background(), "key:not:found").Result()
 		assert.Equal(t, err.Error(), "ERR key not found")
 	})
+
+	close(storageProposeChan)
 }
