@@ -47,6 +47,20 @@ type PedisServer struct {
 	storageProposeChan chan storage.StorageData
 }
 
+func NewPedisServer(
+	pedisAddr string,
+	store storage.Storage,
+) *PedisServer {
+	s := &PedisServer{
+		handlers: make(map[string]RedisCommand),
+		addr:     pedisAddr,
+		store:    store,
+	}
+
+	_ = s.AddHandler("*", commands.RequestHandler{})
+	return s
+}
+
 func NewKVStore(
 	snapshotter *snap.Snapshotter,
 	proposeC chan<- string,
