@@ -87,6 +87,16 @@ func (hs hset) Keys() []string {
 	return keys
 }
 
+func (hs hset) Values() []string {
+	keys := []string{}
+
+	for _, i := range hs {
+		keys = append(keys, i.Value())
+	}
+
+	return keys
+}
+
 func (hs hset) ToBytes() ([]byte, error) {
 	log.Println(hs)
 	buf := new(bytes.Buffer)

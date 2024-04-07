@@ -43,6 +43,8 @@ func (s RequestHandler) Run(data []byte, conn net.Conn, store storage.Storage) {
 		go HLenHandler(request)
 	case "hkeys":
 		go HKeysHandler(request)
+	case "hvals":
+		go HValsHandler(request)
 	case "client":
 		log.Println("going to execute client options command")
 	default:
