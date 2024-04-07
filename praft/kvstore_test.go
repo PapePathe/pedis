@@ -148,5 +148,13 @@ func TestServerHSetAndHGet(t *testing.T) {
 		l, err = client.HLen(ctx, "not-a-key").Result()
 		require.NoError(t, err)
 		assert.Equal(t, int64(0), l)
+
+		keys, err := client.HKeys(ctx, "user").Result()
+		require.NoError(t, err)
+		assert.Equal(t, []string{"name", "country", "221"}, keys)
+
+		keys, err = client.HKeys(ctx, "not-a-key").Result()
+		require.NoError(t, err)
+		assert.Equal(t, []string{}, keys)
 	})
 }

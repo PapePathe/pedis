@@ -11,6 +11,7 @@ type IClientRequest interface {
 	WriteError(string) error
 	WriteString(string) error
 	WriteNumber(string) error
+	WriteArray([]string) error
 	WriteOK() error
 	WriteNil() error
 	Write([]byte) (int, error)
@@ -25,6 +26,15 @@ type ClientRequest struct {
 func (c ClientRequest) WriteError(s string) error {
 	str := fmt.Sprintf("-ERR %s\r\n", s)
 	_, err := c.Conn.Write([]byte(str))
+	if err != nil {
+		return fmt.Errorf("net write error (%v)", err)
+	}
+
+	return nil
+}
+
+func (c ClientRequest) WriteArray(a []string) error {
+	_, err := c.Conn.Write(renderer.RenderArray(a))
 	if err != nil {
 		return fmt.Errorf("net write error (%v)", err)
 	}

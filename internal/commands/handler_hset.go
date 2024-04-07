@@ -77,6 +77,16 @@ func (hs hset) Get(k string) (string, error) {
 	return "", errors.New("key not found in set")
 }
 
+func (hs hset) Keys() []string {
+	keys := []string{}
+
+	for _, i := range hs {
+		keys = append(keys, i.Key())
+	}
+
+	return keys
+}
+
 func (hs hset) ToBytes() ([]byte, error) {
 	log.Println(hs)
 	buf := new(bytes.Buffer)
