@@ -43,6 +43,12 @@ func (c ClientRequest) WriteString(s string) error {
 }
 
 func (c ClientRequest) WriteNumber(s string) error {
+	str := fmt.Sprintf(":%s\r\n", s)
+	_, err := c.Conn.Write([]byte(str))
+	if err != nil {
+		return fmt.Errorf("net write error (%v)", err)
+	}
+
 	return nil
 }
 

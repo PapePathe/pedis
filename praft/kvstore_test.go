@@ -117,6 +117,8 @@ func TestServerHSetAndHGet(t *testing.T) {
 	t.Run("Can set and get a hash", func(t *testing.T) {
 		//	m := map[string]interface{}{"key-one": "one value", "key-two": "two value"}
 		//		err = client.HMSet(context.Background(), "myhash", m, 0).Err()
+		ctx := context.Background()
+
 		result, err := client.HSet(context.Background(), "user", "name", "Pathe", "country", "Senegal", 221).Result()
 		require.NoError(t, err)
 		assert.Equal(t, int64(3), result)
@@ -138,5 +140,13 @@ func TestServerHSetAndHGet(t *testing.T) {
 		name, err = client.HGet(context.Background(), "user", "221").Result()
 		require.NoError(t, err)
 		assert.Equal(t, "", name)
+
+		l, err := client.HLen(ctx, "user").Result()
+		require.NoError(t, err)
+		assert.Equal(t, int64(3), l)
+
+		l, err = client.HLen(ctx, "not-a-key").Result()
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), l)
 	})
 }
