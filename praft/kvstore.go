@@ -57,7 +57,7 @@ func NewPedisServer(
 		store:    store,
 	}
 
-	_ = s.AddHandler("*", commands.RequestHandler{})
+	_ = s.AddHandler("*", commands.DefaultRequestHandler())
 	return s
 }
 

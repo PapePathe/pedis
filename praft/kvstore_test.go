@@ -164,5 +164,17 @@ func TestServerHSetAndHGet(t *testing.T) {
 		keys, err = client.HVals(ctx, "not-a-key").Result()
 		require.NoError(t, err)
 		assert.Equal(t, []string{}, keys)
+
+		exists, err := client.HExists(ctx, "user", "name").Result()
+		require.NoError(t, err)
+		assert.Equal(t, true, exists)
+
+		exists, err = client.HExists(ctx, "user", "not-a-field").Result()
+		require.NoError(t, err)
+		assert.Equal(t, false, exists)
+
+		exists, err = client.HExists(ctx, "key", "not-a-field").Result()
+		require.NoError(t, err)
+		assert.Equal(t, false, exists)
 	})
 }
