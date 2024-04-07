@@ -3,6 +3,7 @@ package commands
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -21,7 +22,8 @@ func HSetHandler(items [][]byte, store storage.Storage, conn net.Conn) {
 		return
 	}
 
-	_, err = store.HSet(string(items[0]), data, 0)
+	log.Println("hset key", string(items[2]))
+	_, err = store.HSet(string(items[2]), data, 0)
 
 	if err != nil {
 		_, _ = conn.Write([]byte("-ERR future error message\r\n"))
@@ -40,6 +42,9 @@ func (ha hasharray) Key() string {
 }
 
 func (ha hasharray) Value() string {
+	if len(ha) < 4 {
+		return ""
+	}
 	return string(ha[3])
 }
 
@@ -62,6 +67,16 @@ func (hs hset) Len() int {
 	return len(hs)
 }
 
+func (hs hset) Get(k string) (string, error) {
+	for _, i := range hs {
+		if i.Key() == k {
+			return i.Value(), nil
+		}
+	}
+
+	return "", errors.New("key not found in set")
+}
+
 func (hs hset) ToBytes() ([]byte, error) {
 	log.Println(hs)
 	buf := new(bytes.Buffer)
@@ -72,7 +87,7 @@ func (hs hset) ToBytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (hs hset) FromBytes(data []byte) error {
+func (hs *hset) FromBytes(data []byte) error {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 

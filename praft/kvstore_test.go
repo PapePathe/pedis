@@ -120,5 +120,23 @@ func TestServerHSetAndHGet(t *testing.T) {
 		result, err := client.HSet(context.Background(), "user", "name", "Pathe", "country", "Senegal", 221).Result()
 		require.NoError(t, err)
 		assert.Equal(t, int64(3), result)
+
+		name, err := client.HGet(context.Background(), "user", "name").Result()
+		require.NoError(t, err)
+		assert.Equal(t, "Pathe", name)
+
+		name, err = client.HGet(context.Background(), "user", "country").Result()
+		require.NoError(t, err)
+		assert.Equal(t, "Senegal", name)
+
+		_, err = client.HGet(context.Background(), "user", "not-a-field").Result()
+		assert.Equal(t, redis.Nil, err)
+
+		_, err = client.HGet(context.Background(), "not-a-key", "country").Result()
+		assert.Equal(t, redis.Nil, err)
+
+		name, err = client.HGet(context.Background(), "user", "221").Result()
+		require.NoError(t, err)
+		assert.Equal(t, "", name)
 	})
 }

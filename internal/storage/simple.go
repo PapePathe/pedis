@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 )
@@ -33,7 +34,16 @@ func (ss *SimpleStorage) HSet(key string, value []byte, expires int64) (int, err
 }
 
 func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
-	return []byte{}, nil
+	ss.RLock()
+	defer ss.RUnlock()
+	val, ok := ss.data[key]
+	log.Print(ss.data)
+
+	if !ok {
+		return nil, errors.New("hget key not found in store")
+	}
+
+	return val.D, nil
 }
 
 // Endpoint for redis SET command
