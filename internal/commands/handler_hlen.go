@@ -2,13 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"log"
 )
 
 func HLenHandler(r ClientRequest) {
-	log.Println("hlen key", string(r.Data[4]))
+	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hlen handler")
 
-	data, err := r.store.HGet(string(r.Data[4]))
+	data, err := r.Store.HGet(string(r.Data[4]))
 
 	if err != nil {
 		_ = r.WriteString(fmt.Sprintf("%d", 0))

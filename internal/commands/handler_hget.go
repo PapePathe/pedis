@@ -1,11 +1,9 @@
 package commands
 
-import "log"
-
 func HGetHandler(r ClientRequest) {
-	log.Println("hget key", string(r.Data[4]))
+	r.Logger.Debug().Str("hset key", string(r.Data[4])).Msg("hget handler")
 
-	data, err := r.store.HGet(string(r.Data[4]))
+	data, err := r.Store.HGet(string(r.Data[4]))
 
 	if err != nil {
 		_ = r.WriteNil()

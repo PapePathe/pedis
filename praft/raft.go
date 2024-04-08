@@ -16,6 +16,7 @@ package praft
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rs/zerolog"
 	"go.etcd.io/etcd/client/pkg/v3/fileutil"
 	"go.etcd.io/etcd/client/pkg/v3/types"
 	"go.etcd.io/etcd/raft/v3"
@@ -74,7 +76,8 @@ type raftNode struct {
 	httpstopc chan struct{} // signals http server to shutdown
 	httpdonec chan struct{} // signals http server shutdown complete
 
-	logger *zap.Logger
+	logger  *zap.Logger
+	zlogger *zerolog.Logger
 }
 
 var defaultSnapshotCount uint64 = 10000
@@ -106,7 +109,8 @@ func NewRaftNode(id int, peers []string, join bool, getSnapshot func() ([]byte, 
 		httpstopc:   make(chan struct{}),
 		httpdonec:   make(chan struct{}),
 
-		logger: zap.NewExample(),
+		zlogger: &zerolog.Logger{},
+		logger:  zap.NewExample(),
 
 		snapshotterReady: make(chan *snap.Snapshotter, 1),
 		// rest of structure populated after WAL replay
@@ -139,12 +143,14 @@ func (rc *raftNode) entriesToApply(ents []raftpb.Entry) (nents []raftpb.Entry) {
 	}
 	firstIdx := ents[0].Index
 	if firstIdx > rc.appliedIndex+1 {
-		log.Fatalf("first index of committed entry[%d] should <= progress.appliedIndex[%d]+1", firstIdx, rc.appliedIndex)
+		err := fmt.Sprintf("first index of committed entry[%d] should <= progress.appliedIndex[%d]+1", firstIdx, rc.appliedIndex)
+		rc.zlogger.Fatal().Err(errors.New(err))
 	}
 	if rc.appliedIndex-firstIdx+1 < uint64(len(ents)) {
 		nents = ents[rc.appliedIndex-firstIdx+1:]
 	}
-	log.Println("count of entries to apply =", len(nents))
+	rc.zlogger.Debug().Int("count", len(nents)).Str("context", "data replication").Msg("entries to apply")
+
 	return nents
 }
 
@@ -307,7 +313,7 @@ func (rc *raftNode) startRaft() {
 	}
 
 	rc.transport = &rafthttp.Transport{
-		Logger:      rc.logger,
+		Logger:      rc.logger.With(zap.String("context", "raft-transport")),
 		ID:          types.ID(rc.id),
 		ClusterID:   0x1000,
 		Raft:        rc,

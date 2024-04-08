@@ -5,6 +5,8 @@ import (
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
+
+	"github.com/rs/zerolog"
 )
 
 type IClientRequest interface {
@@ -18,9 +20,10 @@ type IClientRequest interface {
 }
 
 type ClientRequest struct {
-	Conn  net.Conn
-	Data  [][]byte
-	store storage.Storage
+	Conn   net.Conn
+	Data   [][]byte
+	Store  storage.Storage
+	Logger zerolog.Logger
 }
 
 func (c ClientRequest) WriteError(s string) error {

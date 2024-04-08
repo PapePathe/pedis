@@ -6,33 +6,30 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
-	"pedis/internal/storage"
 	"strings"
 )
 
 // HSetHandler
-func HSetHandler(items [][]byte, store storage.Storage, conn net.Conn) {
-	hs := chunkSlice(items[3:], 4)
+func HSetHandler(r ClientRequest) {
+	r.Logger.Debug().Str("hset key", string(r.Data[4])).Msg("hset handler")
+	hs := chunkSlice(r.Data[5:], 4)
 
 	data, err := hs.ToBytes()
 
 	if err != nil {
-		_, _ = conn.Write([]byte("-ERR future error message\r\n"))
+		r.WriteError(err.Error())
 		return
 	}
 
-	log.Println("hset key", string(items[2]))
-	_, err = store.HSet(string(items[2]), data, 0)
+	_, err = r.Store.HSet(string(r.Data[4]), data, 0)
 
 	if err != nil {
-		_, _ = conn.Write([]byte("-ERR future error message\r\n"))
+		r.WriteError(err.Error())
 		return
 	}
 
-	err = hs.FromBytes(data)
-	log.Println(err)
-	_, _ = conn.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
+	_ = hs.FromBytes(data)
+	_, _ = r.Conn.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
 }
 
 type hasharray [][]byte

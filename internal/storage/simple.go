@@ -2,7 +2,6 @@ package storage
 
 import (
 	"errors"
-	"log"
 	"sync"
 	"time"
 )
@@ -37,7 +36,6 @@ func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
 	ss.RLock()
 	defer ss.RUnlock()
 	val, ok := ss.data[key]
-	log.Print(ss.data)
 
 	if !ok {
 		return nil, errors.New("hget key not found in store")

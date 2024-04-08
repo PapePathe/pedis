@@ -1,13 +1,9 @@
 package commands
 
-import (
-	"log"
-)
-
 func HValsHandler(r ClientRequest) {
-	log.Println("hkeys handler")
+	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hvals handler")
 
-	data, err := r.store.HGet(string(r.Data[4]))
+	data, err := r.Store.HGet(string(r.Data[4]))
 
 	if err != nil {
 		_ = r.WriteArray([]string{})

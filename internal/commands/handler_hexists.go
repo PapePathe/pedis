@@ -1,11 +1,9 @@
 package commands
 
-import "log"
-
 func HExistsHandler(r ClientRequest) {
-	log.Println("hexists key", string(r.Data[4]))
+	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hexists handler")
 
-	data, err := r.store.HGet(string(r.Data[4]))
+	data, err := r.Store.HGet(string(r.Data[4]))
 	if err != nil {
 		_ = r.WriteNumber("0")
 		return
