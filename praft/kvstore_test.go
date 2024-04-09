@@ -62,6 +62,7 @@ func TestServerSetAndGet(t *testing.T) {
 
 	go s.StartPedis()
 
+	ctx := context.Background()
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "",
@@ -73,13 +74,40 @@ func TestServerSetAndGet(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("Can set a value and retrieve it", func(t *testing.T) {
+	t.Run("Can set a value ,retrieve and delete it ", func(t *testing.T) {
 		err := client.Set(context.Background(), "key", "value", 0).Err()
 		require.NoError(t, err)
 
 		result, err := client.Get(context.Background(), "key").Result()
 		require.NoError(t, err)
 		assert.Equal(t, "value", result)
+
+		resultDel, err := client.Del(ctx, "key", "key-2").Result()
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), resultDel)
+
+	})
+
+	t.Run("DEL", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("All specified keys exists", func(t *testing.T) {
+			_ = client.Set(context.Background(), "del:key", "value", 0).Err()
+			_ = client.Set(context.Background(), "del:key-1", "value", 0).Err()
+			resultDel, err := client.Del(ctx, "del:key", "del:key-1").Result()
+
+			require.NoError(t, err)
+			assert.Equal(t, int64(2), resultDel)
+		})
+
+		t.Run("Only one key exists", func(t *testing.T) {
+			_ = client.Set(context.Background(), "del:key", "value", 0).Err()
+			_ = client.Set(context.Background(), "del:key-1", "value", 0).Err()
+			resultDel, err := client.Del(ctx, "del:key", "del:key-2").Result()
+
+			require.NoError(t, err)
+			assert.Equal(t, int64(1), resultDel)
+		})
 	})
 
 	t.Run("Cannot set a key with empty value", func(t *testing.T) {

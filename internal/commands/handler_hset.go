@@ -11,7 +11,7 @@ import (
 
 // HSetHandler
 func HSetHandler(r ClientRequest) {
-	r.Logger.Debug().Str("hset key", string(r.Data[4])).Msg("hset handler")
+	r.Logger.Info().Str("hset key", string(r.Data[4])).Msg("hset handler")
 	hs := chunkSlice(r.Data[5:], 4)
 
 	data, err := hs.ToBytes()

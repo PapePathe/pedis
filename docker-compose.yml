@@ -1,4 +1,13 @@
 services:
+  ##  memtier:
+  ##    image: redis
+  ##    command: redis-benchmark -h pedis-a
+  ##    depends_on:
+  ##      - pedis-a
+  ##
+  memtier:
+    image: redislabs/memtier_benchmark
+    command: memtier_benchmark -s pedis-a -p 6379  -R -n allkeys -d 50 -n 10 --command="hset __key__  name Pathe country Senegal" --command-ratio=2 --command-key-pattern=G
   pedis-a:
     build: .
     environment:

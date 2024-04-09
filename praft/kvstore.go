@@ -60,9 +60,12 @@ func NewPedisServer(
 		handlers: make(map[string]RedisCommand),
 		addr:     pedisAddr,
 		store:    store,
-		logger:   zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}).With().Timestamp().Logger(),
+		logger: zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
+		).With().Timestamp().Logger(),
 	}
 
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	_ = s.AddHandler("*", commands.DefaultRequestHandler())
 	return s
 }
@@ -84,6 +87,9 @@ func NewKVStore(
 		addr:               pedisAddr,
 		store:              store,
 		storageProposeChan: storageProposeChan,
+		logger: zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
+		).With().Timestamp().Logger(),
 	}
 	snapshot, err := s.loadSnapshot()
 	if err != nil {
@@ -96,7 +102,7 @@ func NewKVStore(
 		}
 	}
 
-	_ = s.AddHandler("*", commands.RequestHandler{})
+	_ = s.AddHandler("*", commands.DefaultRequestHandler())
 	// read commits from raft into kvStore map until error
 	go s.readCommits(commitC, errorC)
 	go s.readProposeChan()
@@ -147,10 +153,11 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 		}
 
 		request := commands.ClientRequest{
-			Conn:   conn,
-			Data:   bytes.Split(b[1:size], []byte{13, 10}),
-			Store:  rs.store,
-			Logger: rs.logger,
+			Conn:    conn,
+			Data:    bytes.Split(b[1:size], []byte{13, 10}),
+			Store:   rs.store,
+			Logger:  rs.logger,
+			DataRaw: commands.RawRequest(b[0:size]),
 		}
 
 		handler.Run(request)
