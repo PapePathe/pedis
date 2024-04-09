@@ -20,17 +20,20 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"os"
 	"pedis/internal/commands"
 	"pedis/internal/storage"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/rs/zerolog"
 	"go.etcd.io/etcd/raft/v3/raftpb"
 	"go.etcd.io/etcd/server/v3/etcdserver/api/snap"
 )
 
 type RedisCommand interface {
-	Run([]byte, net.Conn, storage.Storage)
+	Run(commands.ClientRequest)
 }
 
 // a key-value store backed by raft
@@ -45,6 +48,8 @@ type PedisServer struct {
 	addr     string
 
 	storageProposeChan chan storage.StorageData
+
+	logger zerolog.Logger
 }
 
 func NewPedisServer(
@@ -55,9 +60,13 @@ func NewPedisServer(
 		handlers: make(map[string]RedisCommand),
 		addr:     pedisAddr,
 		store:    store,
+		logger: zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
+		).With().Timestamp().Logger(),
 	}
 
-	_ = s.AddHandler("*", commands.RequestHandler{})
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	_ = s.AddHandler("*", commands.DefaultRequestHandler())
 	return s
 }
 
@@ -78,6 +87,9 @@ func NewKVStore(
 		addr:               pedisAddr,
 		store:              store,
 		storageProposeChan: storageProposeChan,
+		logger: zerolog.New(
+			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
+		).With().Timestamp().Logger(),
 	}
 	snapshot, err := s.loadSnapshot()
 	if err != nil {
@@ -90,7 +102,7 @@ func NewKVStore(
 		}
 	}
 
-	_ = s.AddHandler("*", commands.RequestHandler{})
+	_ = s.AddHandler("*", commands.DefaultRequestHandler())
 	// read commits from raft into kvStore map until error
 	go s.readCommits(commitC, errorC)
 	go s.readProposeChan()
@@ -111,7 +123,7 @@ func (s *PedisServer) StartPedis() error {
 	defer listener.Close()
 
 	for {
-		log.Println("received new connection")
+		s.logger.Debug().Msg("received new connection")
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println("Error accepting connection:", err)
@@ -140,7 +152,15 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 			continue
 		}
 
-		handler.Run(b[1:size], conn, rs.store)
+		request := commands.ClientRequest{
+			Conn:    conn,
+			Data:    bytes.Split(b[1:size], []byte{13, 10}),
+			Store:   rs.store,
+			Logger:  rs.logger,
+			DataRaw: commands.RawRequest(b[0:size]),
+		}
+
+		handler.Run(request)
 	}
 }
 

@@ -16,19 +16,24 @@ package main
 
 import (
 	"flag"
+	"os"
 	"pedis/internal/storage"
 	"pedis/praft"
 	"strings"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
 	kvport := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
-	pedis := flag.String("pedis", ":6379", "port where pedis server is running")
+	pedis := flag.String("pedis", "localhost:6379", "port where pedis server is running")
 	flag.Parse()
 
 	proposeC := make(chan string)
