@@ -1,11 +1,8 @@
 package commands
 
 import (
-	"bytes"
-	"log"
-	"net"
-
-	"pedis/internal/storage"
+	"fmt"
+	"strings"
 )
 
 type RequestHandler struct {
@@ -16,22 +13,44 @@ func NewRequestHandler() *RequestHandler {
 	return &RequestHandler{}
 }
 
-func (s RequestHandler) Run(data []byte, conn net.Conn, store storage.Storage) {
-	items := bytes.Split(data, []byte{13, 10})
+func DefaultRequestHandler() *RequestHandler {
+	subcommands := map[string]CommandHandler{
+		// acl commands
+		"acl": AclHandler,
 
-	log.Println(len(items))
+		"del": DelHandler,
 
-	log.Println("sub command", string(items[2]))
-	switch string(items[2]) {
-	case "hello":
-		HelloHandler(items, store, conn)
-	case "get":
-		GetHandler(items, store, conn)
-	case "set":
-		SetHandler(items, store, conn)
-	case "client":
-		log.Println("going to execute client options command")
-	default:
-		log.Println("command", string(items[2]), "is not yet supported")
+		// hash related commands
+		"hexists": HExistsHandler,
+		"hget":    HGetHandler,
+		"hkeys":   HKeysHandler,
+		"hlen":    HLenHandler,
+		"hset":    HSetHandler,
+		"hvals":   HValsHandler,
+		"config":  ConfigHandler,
+	}
+	return &RequestHandler{subcommands}
+}
+
+func (s RequestHandler) Run(request ClientRequest) {
+	subcommand := strings.ToLower(string(request.Data[2]))
+
+	if h, ok := s.subcommands[subcommand]; ok {
+		go h(request)
+	} else {
+		switch subcommand {
+		case "hello":
+			go HelloHandler(request.Data, request.Store, request.Conn)
+		case "get":
+			go GetHandler(request.Data, request.Store, request.Conn)
+		case "set":
+			go SetHandler(request.Data, request.Store, request.Conn)
+		case "client":
+			request.WriteString("OK")
+			request.Logger.Debug().Msg("going to execute client options command")
+		default:
+			request.WriteError(fmt.Sprintf("command not supported %v", string(request.Data[2])))
+			request.Logger.Debug().Str("command", string(request.Data[2])).Msg("is not yet supported")
+		}
 	}
 }
