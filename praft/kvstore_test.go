@@ -132,6 +132,7 @@ func TestServerSetAndGet(t *testing.T) {
 			_, err := client.Do(ctx, "acl", "setuser", "pathe-s").Result()
 
 			require.NoError(t, err)
+			_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
 		})
 
 		t.Run("GETUSER", func(t *testing.T) {
