@@ -31,7 +31,6 @@ func main() {
 
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
-	kvport := flag.Int("port", 9121, "key-value server port")
 	join := flag.Bool("join", false, "join an existing cluster")
 	pedis := flag.String("pedis", "localhost:6379", "port where pedis server is running")
 	flag.Parse()
@@ -44,13 +43,34 @@ func main() {
 	storageProposeChan := make(chan storage.StorageData)
 	defer close(storageProposeChan)
 
-	// raft provides a commit stream for the proposals from the http api
 	var kvs *praft.PedisServer
 	getSnapshot := func() ([]byte, error) { return kvs.GetSnapshot() }
-	commitC, errorC, snapshotterReady := praft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
+	commitC, errorC, snapshotterReady := praft.NewRaftNode(
+		*id,
+		strings.Split(*cluster, ","),
+		*join,
+		getSnapshot,
+		proposeC,
+		confChangeC,
+	)
 
-	kvs = praft.NewKVStore(<-snapshotterReady, proposeC, commitC, errorC, storage.NewSimpleStorage(storageProposeChan), *pedis, storageProposeChan, confChangeC)
+	kvs = praft.NewKVStore(
+		<-snapshotterReady,
+		proposeC,
+		commitC,
+		errorC,
+		storage.NewSimpleStorage(storageProposeChan),
+		*pedis,
+		storageProposeChan,
+		confChangeC,
+	)
 
-	// the key-value http handler will propose updates to raft
-	praft.ServeHTTPKVAPI(kvs, *kvport, confChangeC, errorC)
+	go func() {
+		if err := kvs.StartPedis(); err != nil {
+			log.Fatal().Err(err)
+		}
+	}()
+	if err, ok := <-errorC; ok {
+		log.Fatal().Err(err)
+	}
 }
