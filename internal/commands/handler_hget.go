@@ -1,9 +1,16 @@
 package commands
 
 func HGetHandler(r ClientRequest) {
-	r.Logger.Debug().Str("hset key", string(r.Data[4])).Msg("hget handler")
+	r.Logger.Debug().Interface("command", r.DataRaw.ReadArray()).Msg("hget handler")
 
-	data, err := r.Store.HGet(string(r.Data[4]))
+	datat := r.DataRaw.ReadArray()
+
+	if len(datat) <= 3 {
+		_ = r.WriteError("incomplete command args")
+		return
+	}
+
+	data, err := r.Store.HGet(datat[0])
 
 	if err != nil {
 		_ = r.WriteNil()
@@ -13,7 +20,7 @@ func HGetHandler(r ClientRequest) {
 	hs := hset{}
 	hs.FromBytes(data)
 
-	value, err := hs.Get(string(r.Data[6]))
+	value, err := hs.Get(datat[1])
 
 	if err != nil {
 		_ = r.WriteNil()
