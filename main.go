@@ -32,7 +32,7 @@ func main() {
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
 	join := flag.Bool("join", false, "join an existing cluster")
-	pedis := flag.String("pedis", "localhost:6379", "port where pedis server is running")
+	pedis := flag.String("pedis", "0.0.0.0:6379", "port where pedis server is running")
 	flag.Parse()
 	proposeC := make(chan string)
 	defer close(proposeC)
