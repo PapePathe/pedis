@@ -15,6 +15,9 @@ func NewRequestHandler() *RequestHandler {
 
 func DefaultRequestHandler() *RequestHandler {
 	subcommands := map[string]CommandHandler{
+		// cluster commands
+		"cluster": ClusterHandler,
+
 		// acl commands
 		"acl": AclHandler,
 

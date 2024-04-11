@@ -38,10 +38,11 @@ type RedisCommand interface {
 
 // a key-value store backed by raft
 type PedisServer struct {
-	proposeC    chan<- string // channel for proposing updates
-	mu          sync.RWMutex
-	kvStore     map[string]string // current committed key-value pairs
-	snapshotter *snap.Snapshotter
+	proposeC           chan<- string // channel for proposing updates
+	clusterChangesChan chan<- raftpb.ConfChange
+	mu                 sync.RWMutex
+	kvStore            map[string]string // current committed key-value pairs
+	snapshotter        *snap.Snapshotter
 
 	handlers map[string]RedisCommand
 	store    storage.Storage
@@ -78,6 +79,7 @@ func NewKVStore(
 	store storage.Storage,
 	pedisAddr string,
 	storageProposeChan chan storage.StorageData,
+	clusterConfChan chan raftpb.ConfChange,
 ) *PedisServer {
 	s := &PedisServer{
 		proposeC:           proposeC,
@@ -87,6 +89,7 @@ func NewKVStore(
 		addr:               pedisAddr,
 		store:              store,
 		storageProposeChan: storageProposeChan,
+		clusterChangesChan: clusterConfChan,
 		logger: zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
 		).With().Timestamp().Logger(),
@@ -153,11 +156,12 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 		}
 
 		request := commands.ClientRequest{
-			Conn:    conn,
-			Data:    bytes.Split(b[1:size], []byte{13, 10}),
-			Store:   rs.store,
-			Logger:  rs.logger,
-			DataRaw: commands.RawRequest(b[0:size]),
+			Conn:               conn,
+			Data:               bytes.Split(b[1:size], []byte{13, 10}),
+			Store:              rs.store,
+			Logger:             rs.logger,
+			DataRaw:            commands.RawRequest(b[0:size]),
+			ClusterChangesChan: rs.clusterChangesChan,
 		}
 
 		handler.Run(request)

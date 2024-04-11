@@ -52,6 +52,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCluster(t *testing.T) {
+	storageProposeChan := make(chan storage.StorageData)
+
+	s := NewPedisServer(
+		"localhost:6399",
+		storage.NewSimpleStorage(storageProposeChan),
+	)
+
+	go s.StartPedis()
+
+	ctx := context.Background()
+	client := redis.NewClient(&redis.Options{
+		Addr:             "localhost:6399",
+		Password:         "",
+		DB:               0,
+		DisableIndentity: true,
+	})
+
+	t.Run("CLUSTER MEET", func(t *testing.T) {
+		_, err := client.Do(ctx, "cluster", "meet", "2", "http://127.0.0.1:22222").Result()
+
+		require.NoError(t, err)
+	})
+
+}
+
 func TestServerSetAndGet(t *testing.T) {
 	storageProposeChan := make(chan storage.StorageData)
 
@@ -128,8 +154,22 @@ func TestServerSetAndGet(t *testing.T) {
 			require.NoError(t, err)
 		})
 
-		t.Run("SETUSER", func(t *testing.T) {
+		t.Run("CAT dangerous", func(t *testing.T) {
+			t.SkipNow()
+			_, err := client.Do(ctx, "acl", "cat", "dangerous").Result()
+
+			require.NoError(t, err)
+		})
+
+		t.Run("SETUSER-1", func(t *testing.T) {
 			_, err := client.Do(ctx, "acl", "setuser", "pathe-s").Result()
+
+			require.NoError(t, err)
+			_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
+		})
+
+		t.Run("SETUSER-2", func(t *testing.T) {
+			_, err := client.Do(ctx, "acl", "setuser", "pathe-s", "on", "allkeys", "+set").Result()
 
 			require.NoError(t, err)
 			_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()

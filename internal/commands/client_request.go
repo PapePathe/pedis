@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog"
+	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
 type IClientRequest interface {
@@ -59,11 +60,12 @@ func (r RawRequest) ReadArray() []string {
 }
 
 type ClientRequest struct {
-	Conn    net.Conn
-	Data    [][]byte
-	DataRaw RawRequest
-	Store   storage.Storage
-	Logger  zerolog.Logger
+	Conn               net.Conn
+	Data               [][]byte
+	DataRaw            RawRequest
+	Store              storage.Storage
+	Logger             zerolog.Logger
+	ClusterChangesChan chan<- raftpb.ConfChange
 }
 
 func (c ClientRequest) WriteError(s string) error {

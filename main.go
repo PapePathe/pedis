@@ -35,7 +35,6 @@ func main() {
 	join := flag.Bool("join", false, "join an existing cluster")
 	pedis := flag.String("pedis", "localhost:6379", "port where pedis server is running")
 	flag.Parse()
-
 	proposeC := make(chan string)
 	defer close(proposeC)
 
@@ -50,7 +49,7 @@ func main() {
 	getSnapshot := func() ([]byte, error) { return kvs.GetSnapshot() }
 	commitC, errorC, snapshotterReady := praft.NewRaftNode(*id, strings.Split(*cluster, ","), *join, getSnapshot, proposeC, confChangeC)
 
-	kvs = praft.NewKVStore(<-snapshotterReady, proposeC, commitC, errorC, storage.NewSimpleStorage(storageProposeChan), *pedis, storageProposeChan)
+	kvs = praft.NewKVStore(<-snapshotterReady, proposeC, commitC, errorC, storage.NewSimpleStorage(storageProposeChan), *pedis, storageProposeChan, confChangeC)
 
 	// the key-value http handler will propose updates to raft
 	praft.ServeHTTPKVAPI(kvs, *kvport, confChangeC, errorC)
