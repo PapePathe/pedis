@@ -15,25 +15,49 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 	"os"
 	"pedis/internal/storage"
 	"pedis/praft"
 	"strings"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/redis/go-redis/v9"
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
 	cluster := flag.String("cluster", "http://127.0.0.1:9021", "comma separated cluster peers")
 	id := flag.Int("id", 1, "node ID")
 	join := flag.Bool("join", false, "join an existing cluster")
 	pedis := flag.String("pedis", "0.0.0.0:6379", "port where pedis server is running")
+	healthcheck := flag.Bool("health", false, "allow docker and kubernetes to check the health")
 	flag.Parse()
+
+	if *healthcheck {
+		client := redis.NewClient(&redis.Options{
+			Addr:     *pedis,
+			Password: "",
+			DB:       0,
+		})
+
+		log.Println("Running ping command")
+		pong, err := client.Ping(context.Background()).Result()
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+
+		if strings.ToLower(pong) != "pong" {
+			log.Fatalf("Received unexpected response (%v)", pong)
+			os.Exit(1)
+		}
+
+		log.Println("Server healthy")
+		os.Exit(0)
+	}
+
 	proposeC := make(chan string)
 	defer close(proposeC)
 
@@ -67,10 +91,10 @@ func main() {
 
 	go func() {
 		if err := kvs.StartPedis(); err != nil {
-			log.Fatal().Err(err)
+			log.Fatal(err)
 		}
 	}()
 	if err, ok := <-errorC; ok {
-		log.Fatal().Err(err)
+		log.Fatal(err)
 	}
 }
