@@ -5,7 +5,21 @@ import (
 	"pedis/internal/storage"
 )
 
-func AclHandler(r ClientRequest) {
+type AclHandler struct{}
+
+func (ch AclHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch AclHandler) Permissions() []string {
+	return nil
+}
+
+func (ch AclHandler) Persistent() bool {
+	return false
+}
+
+func (ch AclHandler) Handle(r ClientRequest) {
 	data := r.DataRaw.ReadArray()
 	r.Logger.
 		Debug().

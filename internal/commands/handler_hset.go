@@ -9,8 +9,21 @@ import (
 	"strings"
 )
 
-// HSetHandler
-func HSetHandler(r ClientRequest) {
+type HSetHandler struct{}
+
+func (ch HSetHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch HSetHandler) Permissions() []string {
+	return nil
+}
+
+func (ch HSetHandler) Persistent() bool {
+	return false
+}
+
+func (ch HSetHandler) Handle(r ClientRequest) {
 	r.Logger.Info().Str("hset key", string(r.Data[4])).Msg("hset handler")
 	hs := chunkSlice(r.Data[5:], 4)
 

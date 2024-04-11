@@ -7,7 +7,21 @@ import (
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
-func ClusterHandler(r ClientRequest) {
+type ClusterHandler struct{}
+
+func (ch ClusterHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch ClusterHandler) Permissions() []string {
+	return nil
+}
+
+func (ch ClusterHandler) Persistent() bool {
+	return false
+}
+
+func (ch ClusterHandler) Handle(r ClientRequest) {
 	data := r.DataRaw.ReadArray()
 	log.Println(data)
 
@@ -42,4 +56,5 @@ func ClusterHandler(r ClientRequest) {
 	default:
 		r.WriteError("subcommand not found")
 	}
+
 }

@@ -16,21 +16,21 @@ func NewRequestHandler() *RequestHandler {
 func DefaultRequestHandler() *RequestHandler {
 	subcommands := map[string]CommandHandler{
 		// cluster commands
-		"cluster": ClusterHandler,
+		"cluster": ClusterHandler{},
 
 		// acl commands
-		"acl": AclHandler,
+		"acl": AclHandler{},
 
-		"del": DelHandler,
+		"del": DelHandler{},
 
 		// hash related commands
-		"hexists": HExistsHandler,
-		"hget":    HGetHandler,
-		"hkeys":   HKeysHandler,
-		"hlen":    HLenHandler,
-		"hset":    HSetHandler,
-		"hvals":   HValsHandler,
-		"config":  ConfigHandler,
+		"hexists": HExistsHandler{},
+		"hget":    HGetHandler{},
+		"hkeys":   HKeysHandler{},
+		"hlen":    HLenHandler{},
+		"hset":    HSetHandler{},
+		"hvals":   HValsHandler{},
+		"config":  ConfigHandler{},
 	}
 	return &RequestHandler{subcommands}
 }
@@ -39,7 +39,7 @@ func (s RequestHandler) Run(request ClientRequest) {
 	subcommand := strings.ToLower(string(request.Data[2]))
 
 	if h, ok := s.subcommands[subcommand]; ok {
-		go h(request)
+		go h.Handle(request)
 	} else {
 		switch subcommand {
 		case "hello":

@@ -1,6 +1,20 @@
 package commands
 
-func HGetHandler(r ClientRequest) {
+type HGetHandler struct{}
+
+func (ch HGetHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch HGetHandler) Permissions() []string {
+	return nil
+}
+
+func (ch HGetHandler) Persistent() bool {
+	return false
+}
+
+func (ch HGetHandler) Handle(r ClientRequest) {
 	r.Logger.Debug().Interface("command", r.DataRaw.ReadArray()).Msg("hget handler")
 
 	datat := r.DataRaw.ReadArray()
