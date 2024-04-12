@@ -1,41 +1,28 @@
+version: "3.4"
+x-app: &default-pedis
+  image: ko.local/ppathe/pedis/pedis-9e6a4042beefc3cd7105eec240e5b3ab:c3cb180cc2aba05bc6202089b4d76c334f18c7a2a5fdf9e2f53691d1bfcce727
+  healthcheck:
+    test: /ko-app/pedis --health
+    interval: 1s
+    retries: 5
+    start_period: 1s
+    timeout: 10s
 services:
-  ##  memtier:
-  ##    image: redis
-  ##    command: redis-benchmark -h pedis-a
-  ##    depends_on:
-  ##      - pedis-a
-  ##
-  memtier:
-    image: redislabs/memtier_benchmark
-    command: memtier_benchmark -s pedis-a -p 6379  -R -n allkeys -d 50 -n 10 --command="hset __key__  name Pathe country Senegal" --command-ratio=2 --command-key-pattern=G
   pedis-a:
-    build: .
-    environment:
-      ID: 1
-      PEDIS: :6379
-      PORT: 12380
-      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
+    <<: *default-pedis
+    container_name: pedis-a
+    entrypoint: /ko-app/pedis --cluster http://pedis-a:12379
     ports:
       - "6379:6379"
   pedis-b:
-    environment:
-      ID: 2
-      PEDIS: :6379
-      PORT: 12380
-      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
-    build: .
+    <<: *default-pedis
+    container_name: pedis-b
+    entrypoint: /ko-app/pedis --id 2 --join --cluster http://pedis-a:12379,http://pedis-b:12379
     depends_on:
       - pedis-a
-    ports:
-      - "6389:6389"
   pedis-c:
-    environment:
-      ID: 3
-      PEDIS: :6379
-      PORT: 12380
-      CLUSTER: http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
-    build: .
+    <<: *default-pedis
+    container_name: pedis-c
+    entrypoint: /ko-app/pedis --id 3 --join --cluster http://pedis-a:12379,http://pedis-b:12379,http://pedis-c:12379
     depends_on:
       - pedis-a
-    ports:
-      - "6399:6399"
