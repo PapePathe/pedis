@@ -3,7 +3,6 @@ package commands
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
@@ -47,8 +46,6 @@ func (r RawRequest) ReadArray() []string {
 	items := bytes.Split(r[2:], []byte{13, 10})
 	sl := SliceAsChunks(items[3:], 2)
 	array := []string{}
-
-	log.Println(sl)
 
 	for _, i := range sl {
 		if len(i) == 2 {

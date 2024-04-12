@@ -5,14 +5,14 @@ type AclRule struct {
 	KeyPattern string
 }
 type User struct {
-	Password string
-	Rules    []AclRule
+	Passwords []string
+	Rules     []AclRule
+	Active    bool
 }
 
 type Storage interface {
-	Del(key string) error
-
 	// Users
+	GetUser(key string) (*User, error)
 	SetUser(key string, rule []AclRule) error
 	DelUser(key string) error
 	Users() []string
@@ -20,6 +20,7 @@ type Storage interface {
 	// Simple strings
 	Set(key string, value string, expires int64) error
 	Get(key string) (string, error)
+	Del(key string) error
 
 	// Maps
 	HGet(key string) ([]byte, error)

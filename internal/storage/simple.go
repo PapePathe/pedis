@@ -49,6 +49,17 @@ func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
 	return val.D, nil
 }
 
+func (ss *SimpleStorage) GetUser(username string) (*User, error) {
+	ss.aclLock.Lock()
+	u, ok := ss.acl[username]
+	ss.aclLock.Unlock()
+
+	if !ok {
+		return nil, fmt.Errorf("User %s not found in storage", username)
+	}
+
+	return &u, nil
+}
 func (ss *SimpleStorage) SetUser(username string, _ []AclRule) error {
 	ss.aclLock.Lock()
 	_, ok := ss.acl[username]

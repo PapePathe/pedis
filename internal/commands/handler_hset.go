@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -20,7 +19,7 @@ func (ch HSetHandler) Permissions() []string {
 }
 
 func (ch HSetHandler) Persistent() bool {
-	return false
+	return true
 }
 
 func (ch HSetHandler) Handle(r ClientRequest) {
@@ -108,7 +107,6 @@ func (hs hset) Values() []string {
 }
 
 func (hs hset) ToBytes() ([]byte, error) {
-	log.Println(hs)
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 	if err := enc.Encode(hs); err != nil {
