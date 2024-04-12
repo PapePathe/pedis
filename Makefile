@@ -1,5 +1,9 @@
 clean:
 	rm -rf /tmp/pedis*
+
+build-image:
+	ko build
+
 start-primary:
 	go run main.go --cluster http://127.0.0.1:12379
 
