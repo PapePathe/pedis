@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 )
@@ -35,6 +36,7 @@ func DefaultRequestHandler() *RequestHandler {
 }
 
 func (s RequestHandler) Run(request IClientRequest) {
+	log.Println("RedisCommand", request.DataRaw().String(), "PedisParams", request.Data())
 	subcommand := strings.ToLower(string(request.Data()[2]))
 
 	if h, ok := s.subcommands[subcommand]; ok {
