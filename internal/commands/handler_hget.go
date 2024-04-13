@@ -37,3 +37,7 @@ func (ch HGetHandler) Handle(r ClientRequest) {
 
 	_ = r.WriteString(value)
 }
+
+func init() {
+	RegisterCommand("hget", HGetHandler{})
+}

@@ -34,3 +34,7 @@ func (ch HExistsHandler) Handle(r ClientRequest) {
 
 	_ = r.WriteNumber("1")
 }
+
+func init() {
+	RegisterCommand("hexists", HExistsHandler{})
+}

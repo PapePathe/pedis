@@ -27,3 +27,7 @@ func (ch GetHandler) Handle(r ClientRequest) {
 	rr := renderer.BulkStringRenderer{}
 	r.Write(rr.Render(val))
 }
+
+func init() {
+	RegisterCommand("get", GetHandler{})
+}

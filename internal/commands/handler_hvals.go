@@ -29,3 +29,7 @@ func (ch HValsHandler) Handle(r ClientRequest) {
 
 	_ = r.WriteArray(hs.Values())
 }
+
+func init() {
+	RegisterCommand("hvals", HValsHandler{})
+}

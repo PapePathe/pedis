@@ -29,3 +29,7 @@ func (ch HKeysHandler) Handle(r ClientRequest) {
 
 	_ = r.WriteArray(hs.Keys())
 }
+
+func init() {
+	RegisterCommand("hkeys", HKeysHandler{})
+}

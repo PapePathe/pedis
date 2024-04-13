@@ -3,7 +3,24 @@ package commands
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
+
+var (
+	defaultCommands     map[string]CommandHandler
+	defaultCommandsLock sync.Mutex
+)
+
+func RegisterCommand(cmd string, h CommandHandler) {
+	defaultCommandsLock.Lock()
+	defer defaultCommandsLock.Unlock()
+
+	if defaultCommands == nil {
+		defaultCommands = make(map[string]CommandHandler)
+	}
+
+	defaultCommands[cmd] = h
+}
 
 type RequestHandler struct {
 	subcommands map[string]CommandHandler
@@ -14,31 +31,7 @@ func NewRequestHandler() *RequestHandler {
 }
 
 func DefaultRequestHandler() *RequestHandler {
-	subcommands := map[string]CommandHandler{
-		// cluster commands
-		"cluster": ClusterHandler{},
-
-		// acl commands
-		"acl": AclHandler{},
-
-		"del": DelHandler{},
-		"get": GetHandler{},
-		"set": SetHandler{},
-
-		// hash related commands
-		"hexists": HExistsHandler{},
-		"hget":    HGetHandler{},
-		"hkeys":   HKeysHandler{},
-		"hlen":    HLenHandler{},
-		"hset":    HSetHandler{},
-		"hvals":   HValsHandler{},
-
-		"config": ConfigHandler{},
-		"hello":  HelloHandler{},
-		"auth":   AuthHandler{},
-		"ping":   PingHandler{},
-	}
-	return &RequestHandler{subcommands}
+	return &RequestHandler{defaultCommands}
 }
 
 func (s RequestHandler) Run(request ClientRequest) {

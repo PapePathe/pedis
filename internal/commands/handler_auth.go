@@ -41,3 +41,7 @@ func (ch AuthHandler) Handle(r ClientRequest) {
 
 	r.WriteOK()
 }
+
+func init() {
+	RegisterCommand("auth", AuthHandler{})
+}

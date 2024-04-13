@@ -103,3 +103,7 @@ func (aclService) users(r ClientRequest) error {
 
 	return nil
 }
+
+func init() {
+	RegisterCommand("acl", AclHandler{})
+}
