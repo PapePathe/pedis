@@ -120,6 +120,11 @@ func (c ClientRequest) WriteNil() error {
 	return nil
 }
 
-func (c ClientRequest) Write([]byte) (int, error) {
-	return 0, nil
+func (c ClientRequest) Write(data []byte) (int, error) {
+	n, err := c.Conn.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("net write error (%v)", err)
+	}
+
+	return n, nil
 }
