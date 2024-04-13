@@ -50,3 +50,7 @@ func (ch SetHandler) Handle(r ClientRequest) {
 
 	_, _ = r.Write([]byte("+OK\r\n"))
 }
+
+func init() {
+	RegisterCommand("set", SetHandler{})
+}

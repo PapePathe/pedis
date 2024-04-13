@@ -34,3 +34,7 @@ func (ch HelloHandler) Handle(r ClientRequest) {
 		log.Println(err)
 	}
 }
+
+func init() {
+	RegisterCommand("hello", HelloHandler{})
+}

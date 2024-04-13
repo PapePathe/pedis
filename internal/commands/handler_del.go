@@ -36,3 +36,7 @@ func (ch DelHandler) Handle(r ClientRequest) {
 
 	r.WriteNumber(fmt.Sprintf("%d", delCount))
 }
+
+func init() {
+	RegisterCommand("del", DelHandler{})
+}

@@ -25,3 +25,7 @@ func (ch PingHandler) Handle(r ClientRequest) {
 
 	r.WriteString(data[0])
 }
+
+func init() {
+	RegisterCommand("ping", PingHandler{})
+}

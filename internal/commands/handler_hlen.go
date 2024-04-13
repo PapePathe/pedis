@@ -33,3 +33,7 @@ func (ch HLenHandler) Handle(r ClientRequest) {
 
 	_ = r.WriteNumber(fmt.Sprintf("%d", hs.Len()))
 }
+
+func init() {
+	RegisterCommand("hlen", HLenHandler{})
+}

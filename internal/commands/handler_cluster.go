@@ -58,3 +58,7 @@ func (ch ClusterHandler) Handle(r ClientRequest) {
 	}
 
 }
+
+func init() {
+	RegisterCommand("cluster", ClusterHandler{})
+}

@@ -17,3 +17,7 @@ func (ch ConfigHandler) Persistent() bool {
 func (ch ConfigHandler) Handle(r ClientRequest) {
 	r.WriteError("not yet implemented")
 }
+
+func init() {
+	RegisterCommand("config", ConfigHandler{})
+}

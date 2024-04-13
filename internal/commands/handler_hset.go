@@ -140,3 +140,7 @@ func chunkSlice(slice [][]byte, chunkSize int) hset {
 
 	return chunks
 }
+
+func init() {
+	RegisterCommand("hset", HSetHandler{})
+}
