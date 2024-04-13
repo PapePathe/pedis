@@ -2,23 +2,21 @@ package commands
 
 type HGetHandler struct{}
 
-func (ch HGetHandler) Authorize(ClientRequest) error {
+func (ch HGetHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch HGetHandler) Permissions() []string {
+func (ch HGetHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch HGetHandler) Persistent() bool {
+func (ch HGetHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch HGetHandler) Handle(r ClientRequest) {
-	r.Logger.Debug().Interface("command", r.DataRaw.ReadArray()).Msg("hget handler")
-
-	datat := r.DataRaw.ReadArray()
-	data, err := r.Store.HGet(datat[0])
+func (ch HGetHandler) Handle(r IClientRequest) {
+	datat := r.DataRaw().ReadArray()
+	data, err := r.Store().HGet(datat[0])
 
 	if err != nil {
 		_ = r.WriteNil()

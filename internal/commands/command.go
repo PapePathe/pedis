@@ -34,8 +34,8 @@ func DefaultRequestHandler() *RequestHandler {
 	return &RequestHandler{defaultCommands}
 }
 
-func (s RequestHandler) Run(request ClientRequest) {
-	subcommand := strings.ToLower(string(request.Data[2]))
+func (s RequestHandler) Run(request IClientRequest) {
+	subcommand := strings.ToLower(string(request.Data()[2]))
 
 	if h, ok := s.subcommands[subcommand]; ok {
 		if err := h.Authorize(request); err != nil {
@@ -47,10 +47,8 @@ func (s RequestHandler) Run(request ClientRequest) {
 		switch subcommand {
 		case "client":
 			request.WriteString("OK")
-			request.Logger.Debug().Msg("going to execute client options command")
 		default:
 			request.WriteError(fmt.Sprintf("command not supported %v", subcommand))
-			request.Logger.Debug().Str("command", subcommand).Msg("is not yet supported")
 		}
 	}
 }

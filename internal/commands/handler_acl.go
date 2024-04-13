@@ -7,26 +7,20 @@ import (
 
 type AclHandler struct{}
 
-func (ch AclHandler) Authorize(ClientRequest) error {
+func (ch AclHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch AclHandler) Permissions() []string {
+func (ch AclHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch AclHandler) Persistent() bool {
+func (ch AclHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch AclHandler) Handle(r ClientRequest) {
-	data := r.DataRaw.ReadArray()
-	r.Logger.
-		Debug().
-		Interface("Data", data).
-		Interface("RawData", r.DataRaw.String()).
-		Msg("")
-
+func (ch AclHandler) Handle(r IClientRequest) {
+	data := r.DataRaw().ReadArray()
 	svc := aclService{}
 
 	switch data[0] {
@@ -43,13 +37,12 @@ func (ch AclHandler) Handle(r ClientRequest) {
 
 type aclService struct{}
 
-func (aclService) deluser(r ClientRequest) error {
-	data := r.DataRaw.ReadArray()
-	r.Logger.Debug().Interface("usernames", data[1:]).Msg("Going to delete")
+func (aclService) deluser(r IClientRequest) error {
+	data := r.DataRaw().ReadArray()
 	delCount := 0
 
 	for _, u := range data[1:] {
-		err := r.Store.DelUser(u)
+		err := r.Store().DelUser(u)
 
 		if err == nil {
 			delCount++
@@ -61,9 +54,8 @@ func (aclService) deluser(r ClientRequest) error {
 	return nil
 }
 
-func (aclService) setuser(r ClientRequest) error {
-	data := r.DataRaw.ReadArray()
-	r.Logger.Debug().Msg("Going to create or update existing user")
+func (aclService) setuser(r IClientRequest) error {
+	data := r.DataRaw().ReadArray()
 	username := data[1]
 	rules := []storage.AclRule{}
 
@@ -89,16 +81,13 @@ func (aclService) setuser(r ClientRequest) error {
 		}
 	}
 
-	_ = r.Store.SetUser(username, rules)
+	_ = r.Store().SetUser(username, rules)
 	r.WriteOK()
 	return nil
 }
 
-func (aclService) users(r ClientRequest) error {
-	r.Logger.Debug().Msg("Going to list users")
-
-	users := r.Store.Users()
-	r.Logger.Debug().Interface("Users list", users).Msg("")
+func (aclService) users(r IClientRequest) error {
+	users := r.Store().Users()
 	r.WriteArray(users)
 
 	return nil

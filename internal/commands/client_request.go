@@ -8,7 +8,6 @@ import (
 	"pedis/internal/storage"
 	"strings"
 
-	"github.com/rs/zerolog"
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
@@ -20,6 +19,10 @@ type IClientRequest interface {
 	WriteOK() error
 	WriteNil() error
 	Write([]byte) (int, error)
+	Data() [][]byte
+	DataRaw() RawRequest
+	Store() storage.Storage
+	SendClusterConfigChange(raftpb.ConfChange)
 }
 
 type RawRequest []byte
@@ -58,11 +61,37 @@ func (r RawRequest) ReadArray() []string {
 
 type ClientRequest struct {
 	Conn               net.Conn
-	Data               [][]byte
-	DataRaw            RawRequest
-	Store              storage.Storage
-	Logger             zerolog.Logger
-	ClusterChangesChan chan<- raftpb.ConfChange
+	data               [][]byte
+	dataRaw            RawRequest
+	store              storage.Storage
+	clusterChangesChan chan<- raftpb.ConfChange
+}
+
+func NewClientRequest(c net.Conn, d [][]byte, s storage.Storage, rd RawRequest, cchan chan<- raftpb.ConfChange) IClientRequest {
+	return ClientRequest{
+		Conn:               c,
+		data:               d,
+		store:              s,
+		dataRaw:            rd,
+		clusterChangesChan: cchan,
+	}
+
+}
+
+func (c ClientRequest) SendClusterConfigChange(cc raftpb.ConfChange) {
+	c.clusterChangesChan <- cc
+}
+
+func (c ClientRequest) Data() [][]byte {
+	return c.data
+}
+
+func (c ClientRequest) DataRaw() RawRequest {
+	return c.dataRaw
+}
+
+func (c ClientRequest) Store() storage.Storage {
+	return c.store
 }
 
 func (c ClientRequest) WriteError(s string) error {

@@ -6,20 +6,20 @@ import (
 
 type GetHandler struct{}
 
-func (ch GetHandler) Authorize(ClientRequest) error {
+func (ch GetHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch GetHandler) Permissions() []string {
+func (ch GetHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch GetHandler) Persistent() bool {
+func (ch GetHandler) Persistent(IClientRequest) bool {
 	return true
 }
 
-func (ch GetHandler) Handle(r ClientRequest) {
-	val, err := r.Store.Get(string(r.Data[4]))
+func (ch GetHandler) Handle(r IClientRequest) {
+	val, err := r.Store().Get(string(r.Data()[4]))
 	if err != nil {
 		r.Write([]byte("-ERR key not found\r\n"))
 	}

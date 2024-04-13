@@ -34,7 +34,7 @@ import (
 )
 
 type RedisCommand interface {
-	Run(commands.ClientRequest)
+	Run(commands.IClientRequest)
 }
 
 type PedisServerOpts struct {
@@ -164,14 +164,13 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 			continue
 		}
 
-		request := commands.ClientRequest{
-			Conn:               conn,
-			Data:               bytes.Split(b[1:size], []byte{13, 10}),
-			Store:              rs.store,
-			Logger:             rs.logger,
-			DataRaw:            commands.RawRequest(b[0:size]),
-			ClusterChangesChan: rs.clusterChangesChan,
-		}
+		request := commands.NewClientRequest(
+			conn,
+			bytes.Split(b[1:size], []byte{13, 10}),
+			rs.store,
+			commands.RawRequest(b[0:size]),
+			rs.clusterChangesChan,
+		)
 
 		handler.Run(request)
 	}

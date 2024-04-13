@@ -2,23 +2,22 @@ package commands
 
 type AuthHandler struct{}
 
-func (ch AuthHandler) Authorize(ClientRequest) error {
+func (ch AuthHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch AuthHandler) Permissions() []string {
+func (ch AuthHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch AuthHandler) Persistent() bool {
+func (ch AuthHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch AuthHandler) Handle(r ClientRequest) {
-	data := r.DataRaw.ReadArray()
-	r.Logger.Info().Interface("auth params", data).Msg("")
+func (ch AuthHandler) Handle(r IClientRequest) {
+	data := r.DataRaw().ReadArray()
 
-	user, err := r.Store.GetUser(data[0])
+	user, err := r.Store().GetUser(data[0])
 	if err != nil {
 		r.WriteError(err.Error())
 		return
