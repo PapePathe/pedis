@@ -323,9 +323,11 @@ func (rc *raftNode) startRaft() {
 	}
 
 	rc.transport.Start()
-	for i := range rc.peers {
-		if i+1 != rc.id {
-			rc.transport.AddPeer(types.ID(i+1), []string{rc.peers[i]})
+	if len(rc.peers) > 1 {
+		for i := range rc.peers {
+			if i+1 != rc.id {
+				rc.transport.AddPeer(types.ID(i+1), []string{rc.peers[i]})
+			}
 		}
 	}
 
@@ -510,6 +512,7 @@ func (rc *raftNode) serveRaft() {
 		log.Fatalf("raftexample: Failed parsing URL (%v)", err)
 	}
 
+	rc.logger.Info("started serving raft requests on ", zap.String("url", url.String()))
 	ln, err := newStoppableListener(url.Host, rc.httpstopc)
 	if err != nil {
 		log.Fatalf("raftexample: Failed to listen rafthttp (%v)", err)

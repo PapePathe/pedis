@@ -5,12 +5,24 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 )
 
-// HSetHandler
-func HSetHandler(r ClientRequest) {
+type HSetHandler struct{}
+
+func (ch HSetHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch HSetHandler) Permissions() []string {
+	return nil
+}
+
+func (ch HSetHandler) Persistent() bool {
+	return true
+}
+
+func (ch HSetHandler) Handle(r ClientRequest) {
 	r.Logger.Info().Str("hset key", string(r.Data[4])).Msg("hset handler")
 	hs := chunkSlice(r.Data[5:], 4)
 
@@ -29,7 +41,7 @@ func HSetHandler(r ClientRequest) {
 	}
 
 	_ = hs.FromBytes(data)
-	_, _ = r.Conn.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
+	_, _ = r.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
 }
 
 type hasharray [][]byte
@@ -95,7 +107,6 @@ func (hs hset) Values() []string {
 }
 
 func (hs hset) ToBytes() ([]byte, error) {
-	log.Println(hs)
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 	if err := enc.Encode(hs); err != nil {

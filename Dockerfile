@@ -24,8 +24,8 @@ COPY --from=build-stage /pedis/pedis /pedis
 
 EXPOSE 6379
 EXPOSE 12380
-EXPOSE 1237
+EXPOSE 12379
 
 # USER nonroot:nonroot
 
-ENTRYPOINT /pedis -id $ID -pedis $PEDIS -cluster $CLUSTER -port $PORT
+ENTRYPOINT /pedis -id $ID -pedis $PEDIS -cluster $CLUSTER -port $PORT -join $JOIN

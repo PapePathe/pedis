@@ -15,15 +15,28 @@ func NewRequestHandler() *RequestHandler {
 
 func DefaultRequestHandler() *RequestHandler {
 	subcommands := map[string]CommandHandler{
-		"del": DelHandler,
+		// cluster commands
+		"cluster": ClusterHandler{},
+
+		// acl commands
+		"acl": AclHandler{},
+
+		"del": DelHandler{},
+		"get": GetHandler{},
+		"set": SetHandler{},
+
 		// hash related commands
-		"hexists": HExistsHandler,
-		"hget":    HGetHandler,
-		"hkeys":   HKeysHandler,
-		"hlen":    HLenHandler,
-		"hset":    HSetHandler,
-		"hvals":   HValsHandler,
-		"config":  ConfigHandler,
+		"hexists": HExistsHandler{},
+		"hget":    HGetHandler{},
+		"hkeys":   HKeysHandler{},
+		"hlen":    HLenHandler{},
+		"hset":    HSetHandler{},
+		"hvals":   HValsHandler{},
+
+		"config": ConfigHandler{},
+		"hello":  HelloHandler{},
+		"auth":   AuthHandler{},
+		"ping":   PingHandler{},
 	}
 	return &RequestHandler{subcommands}
 }
@@ -32,21 +45,19 @@ func (s RequestHandler) Run(request ClientRequest) {
 	subcommand := strings.ToLower(string(request.Data[2]))
 
 	if h, ok := s.subcommands[subcommand]; ok {
-		go h(request)
+		if err := h.Authorize(request); err != nil {
+			request.WriteError("not authorized to access command")
+			return
+		}
+		go h.Handle(request)
 	} else {
 		switch subcommand {
-		case "hello":
-			go HelloHandler(request.Data, request.Store, request.Conn)
-		case "get":
-			go GetHandler(request.Data, request.Store, request.Conn)
-		case "set":
-			go SetHandler(request.Data, request.Store, request.Conn)
 		case "client":
 			request.WriteString("OK")
 			request.Logger.Debug().Msg("going to execute client options command")
 		default:
-			request.WriteError(fmt.Sprintf("command not supported %v", string(request.Data[2])))
-			request.Logger.Debug().Str("command", string(request.Data[2])).Msg("is not yet supported")
+			request.WriteError(fmt.Sprintf("command not supported %v", subcommand))
+			request.Logger.Debug().Str("command", subcommand).Msg("is not yet supported")
 		}
 	}
 }

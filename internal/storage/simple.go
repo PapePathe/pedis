@@ -2,21 +2,25 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
 
 type SimpleStorage struct {
-	data        map[string]StorageDataInternal
-	exp         map[string]time.Time
-	proposeChan chan StorageData
-	expLock     sync.RWMutex
+	data map[string]StorageDataInternal
 	sync.RWMutex
+	acl         map[string]*User
+	aclLock     sync.RWMutex
+	exp         map[string]time.Time
+	expLock     sync.RWMutex
+	proposeChan chan StorageData
 }
 
 func NewSimpleStorage(proposeChan chan StorageData) *SimpleStorage {
 	return &SimpleStorage{
 		data:        make(map[string]StorageDataInternal),
+		acl:         make(map[string]*User),
 		exp:         make(map[string]time.Time),
 		proposeChan: proposeChan,
 	}
@@ -43,6 +47,73 @@ func (ss *SimpleStorage) HGet(key string) ([]byte, error) {
 	}
 
 	return val.D, nil
+}
+
+func (ss *SimpleStorage) GetUser(username string) (*User, error) {
+	ss.aclLock.Lock()
+	u, ok := ss.acl[username]
+	ss.aclLock.Unlock()
+
+	if !ok {
+		return nil, fmt.Errorf("User %s not found in storage", username)
+	}
+
+	return u, nil
+}
+func (ss *SimpleStorage) SetUser(username string, rules []AclRule) error {
+	ss.aclLock.Lock()
+	defer ss.aclLock.Unlock()
+
+	u, ok := ss.acl[username]
+	if !ok {
+		ss.acl[username] = &User{}
+	}
+
+	u = ss.acl[username]
+	for _, r := range rules {
+		switch r.Type {
+		case AclActivateUser:
+			u.Active = true
+		case AclDisableUser:
+			u.Active = false
+		case AclAnyPassword:
+			u.AnyPassword = true
+		case AclSetUserPassword:
+			u.Passwords = append(u.Passwords, r.Value)
+		default:
+			return fmt.Errorf("acl rule not supported (%v)", r.Type)
+		}
+	}
+
+	return nil
+}
+
+func (ss *SimpleStorage) DelUser(key string) error {
+	ss.aclLock.Lock()
+	_, ok := ss.acl[key]
+	ss.aclLock.Unlock()
+
+	if !ok {
+		return fmt.Errorf("User (%s) Not found", key)
+	}
+
+	ss.aclLock.Lock()
+	delete(ss.acl, key)
+	ss.aclLock.Unlock()
+
+	return nil
+}
+
+func (ss *SimpleStorage) Users() []string {
+	users := []string{}
+
+	ss.aclLock.RLock()
+	for u, _ := range ss.acl {
+		users = append(users, u)
+	}
+	ss.aclLock.RUnlock()
+
+	return users
 }
 
 func (ss *SimpleStorage) Del(key string) error {

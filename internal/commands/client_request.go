@@ -3,13 +3,13 @@ package commands
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
 	"strings"
 
 	"github.com/rs/zerolog"
+	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
 type IClientRequest interface {
@@ -47,8 +47,6 @@ func (r RawRequest) ReadArray() []string {
 	sl := SliceAsChunks(items[3:], 2)
 	array := []string{}
 
-	log.Println(sl)
-
 	for _, i := range sl {
 		if len(i) == 2 {
 			array = append(array, string(i[1]))
@@ -59,11 +57,12 @@ func (r RawRequest) ReadArray() []string {
 }
 
 type ClientRequest struct {
-	Conn    net.Conn
-	Data    [][]byte
-	DataRaw RawRequest
-	Store   storage.Storage
-	Logger  zerolog.Logger
+	Conn               net.Conn
+	Data               [][]byte
+	DataRaw            RawRequest
+	Store              storage.Storage
+	Logger             zerolog.Logger
+	ClusterChangesChan chan<- raftpb.ConfChange
 }
 
 func (c ClientRequest) WriteError(s string) error {
@@ -106,6 +105,10 @@ func (c ClientRequest) WriteNumber(s string) error {
 }
 
 func (c ClientRequest) WriteOK() error {
+	_, err := c.Conn.Write([]byte("+OK\r\n"))
+	if err != nil {
+		return fmt.Errorf("net write error (%v)", err)
+	}
 	return nil
 }
 
@@ -117,6 +120,11 @@ func (c ClientRequest) WriteNil() error {
 	return nil
 }
 
-func (c ClientRequest) Write([]byte) (int, error) {
-	return 0, nil
+func (c ClientRequest) Write(data []byte) (int, error) {
+	n, err := c.Conn.Write(data)
+	if err != nil {
+		return 0, fmt.Errorf("net write error (%v)", err)
+	}
+
+	return n, nil
 }

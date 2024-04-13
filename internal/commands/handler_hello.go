@@ -2,13 +2,24 @@ package commands
 
 import (
 	"log"
-	"net"
 	"pedis/internal/response"
-	"pedis/internal/storage"
 )
 
-func HelloHandler(_ [][]byte, _ storage.Storage, conn net.Conn) {
-	log.Println("Respond to hello command")
+type HelloHandler struct{}
+
+func (ch HelloHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch HelloHandler) Permissions() []string {
+	return nil
+}
+
+func (ch HelloHandler) Persistent() bool {
+	return false
+}
+
+func (ch HelloHandler) Handle(r ClientRequest) {
 	hr := response.HelloResponse{
 		Server:  "redis",
 		Version: "6.2.1",
@@ -17,7 +28,7 @@ func HelloHandler(_ [][]byte, _ storage.Storage, conn net.Conn) {
 		Role:    "master",
 	}
 
-	_, err := conn.Write(hr.Render())
+	_, err := r.Write(hr.Render())
 
 	if err != nil {
 		log.Println(err)

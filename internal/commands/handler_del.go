@@ -4,7 +4,21 @@ import "fmt"
 
 // ACL categories: @keyspace, @write, @slow
 
-func DelHandler(r ClientRequest) {
+type DelHandler struct{}
+
+func (ch DelHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch DelHandler) Permissions() []string {
+	return nil
+}
+
+func (ch DelHandler) Persistent() bool {
+	return false
+}
+
+func (ch DelHandler) Handle(r ClientRequest) {
 	r.Logger.Debug().Interface("Data", r.DataRaw.ReadArray()).Str("RawData", r.DataRaw.String()).Msg("del handler")
 
 	delCount := 0

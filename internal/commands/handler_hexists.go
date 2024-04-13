@@ -1,6 +1,20 @@
 package commands
 
-func HExistsHandler(r ClientRequest) {
+type HExistsHandler struct{}
+
+func (ch HExistsHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch HExistsHandler) Permissions() []string {
+	return nil
+}
+
+func (ch HExistsHandler) Persistent() bool {
+	return false
+}
+
+func (ch HExistsHandler) Handle(r ClientRequest) {
 	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hexists handler")
 
 	data, err := r.Store.HGet(string(r.Data[4]))

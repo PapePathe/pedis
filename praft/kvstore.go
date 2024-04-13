@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"os"
@@ -38,10 +39,11 @@ type RedisCommand interface {
 
 // a key-value store backed by raft
 type PedisServer struct {
-	proposeC    chan<- string // channel for proposing updates
-	mu          sync.RWMutex
-	kvStore     map[string]string // current committed key-value pairs
-	snapshotter *snap.Snapshotter
+	proposeC           chan<- string // channel for proposing updates
+	clusterChangesChan chan<- raftpb.ConfChange
+	mu                 sync.RWMutex
+	kvStore            map[string]string // current committed key-value pairs
+	snapshotter        *snap.Snapshotter
 
 	handlers map[string]RedisCommand
 	store    storage.Storage
@@ -49,7 +51,8 @@ type PedisServer struct {
 
 	storageProposeChan chan storage.StorageData
 
-	logger zerolog.Logger
+	logger   zerolog.Logger
+	listener net.Listener
 }
 
 func NewPedisServer(
@@ -78,6 +81,7 @@ func NewKVStore(
 	store storage.Storage,
 	pedisAddr string,
 	storageProposeChan chan storage.StorageData,
+	clusterConfChan chan raftpb.ConfChange,
 ) *PedisServer {
 	s := &PedisServer{
 		proposeC:           proposeC,
@@ -87,6 +91,7 @@ func NewKVStore(
 		addr:               pedisAddr,
 		store:              store,
 		storageProposeChan: storageProposeChan,
+		clusterChangesChan: clusterConfChan,
 		logger: zerolog.New(
 			zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339},
 		).With().Timestamp().Logger(),
@@ -114,6 +119,7 @@ func (rs *PedisServer) AddHandler(firstByte string, c RedisCommand) error {
 
 	return nil
 }
+
 func (s *PedisServer) StartPedis() error {
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
@@ -121,6 +127,7 @@ func (s *PedisServer) StartPedis() error {
 	}
 
 	defer listener.Close()
+	s.listener = listener
 
 	for {
 		s.logger.Debug().Msg("received new connection")
@@ -153,11 +160,12 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 		}
 
 		request := commands.ClientRequest{
-			Conn:    conn,
-			Data:    bytes.Split(b[1:size], []byte{13, 10}),
-			Store:   rs.store,
-			Logger:  rs.logger,
-			DataRaw: commands.RawRequest(b[0:size]),
+			Conn:               conn,
+			Data:               bytes.Split(b[1:size], []byte{13, 10}),
+			Store:              rs.store,
+			Logger:             rs.logger,
+			DataRaw:            commands.RawRequest(b[0:size]),
+			ClusterChangesChan: rs.clusterChangesChan,
 		}
 
 		handler.Run(request)
@@ -225,6 +233,13 @@ func (s *PedisServer) GetSnapshot() ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return json.Marshal(s.kvStore)
+}
+
+func (s *PedisServer) PedisAddr() (*net.TCPAddr, error) {
+	if s.listener == nil {
+		return nil, errors.New("listener is not started or assigned")
+	}
+	return s.listener.Addr().(*net.TCPAddr), nil
 }
 
 func (s *PedisServer) loadSnapshot() (*raftpb.Snapshot, error) {
