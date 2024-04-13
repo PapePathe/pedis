@@ -37,6 +37,11 @@ type RedisCommand interface {
 	Run(commands.ClientRequest)
 }
 
+type PedisServerOpts struct {
+	DefaultUser     string
+	DefaultPassword string
+}
+
 // a key-value store backed by raft
 type PedisServer struct {
 	proposeC           chan<- string // channel for proposing updates

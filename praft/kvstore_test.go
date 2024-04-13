@@ -29,14 +29,20 @@ import (
 func initClientAndServer(t *testing.T, port int) (*PedisServer, *redis.Client) {
 	storageProposeChan := make(chan storage.StorageData)
 
+	store := storage.NewSimpleStorage(storageProposeChan)
+	store.SetUser("pedis", []storage.AclRule{
+		{Type: storage.AclActivateUser},
+		{Type: storage.AclSetUserPassword, Value: "pedis"},
+	})
 	s := NewPedisServer(
 		fmt.Sprintf("127.0.0.1:%d", port),
-		storage.NewSimpleStorage(storageProposeChan),
+		store,
 	)
 
 	client := redis.NewClient(&redis.Options{
 		Addr:             fmt.Sprintf("127.0.0.1:%d", port),
-		Password:         "",
+		Username:         "pedis",
+		Password:         "pedis",
 		DB:               0,
 		DisableIndentity: true,
 	})
@@ -138,25 +144,25 @@ func TestACLCat(t *testing.T) {
 	})
 }
 
-func TestACLAuth(t *testing.T) {
+func TestHello(t *testing.T) {
 	ctx := context.Background()
 	s, client := initClientAndServer(t, 9004)
 	go s.StartPedis()
 
-	t.Run("AUTH-1", func(t *testing.T) {
+	t.Run("HELLO-1", func(t *testing.T) {
 		existingUser := "existingUser"
 		user404 := "user:404"
 
 		_, err := client.Do(ctx, "acl", "setuser", existingUser, "on", ">weak-password:").Result()
 		require.NoError(t, err)
 
-		_, err = client.Do(ctx, "auth", existingUser).Result()
+		_, err = client.Do(ctx, "hello", 3, existingUser).Result()
 		require.Error(t, err)
 
-		_, err = client.Do(ctx, "auth", existingUser, "weak-password").Result()
+		_, err = client.Do(ctx, "hello", 3, existingUser, "weak-password").Result()
 		require.NoError(t, err)
 
-		_, err = client.Do(ctx, "auth", user404, "weak-password").Result()
+		_, err = client.Do(ctx, "hello", 3, user404, "weak-password").Result()
 		require.Error(t, err)
 	})
 }
@@ -205,7 +211,7 @@ func TestACLUsers(t *testing.T) {
 		list, err := client.Do(ctx, "acl", "users").Result()
 
 		require.NoError(t, err)
-		assert.Equal(t, []interface{}{}, list)
+		assert.Equal(t, []interface{}{"pedis"}, list)
 	})
 
 	t.Run("USERS-2", func(t *testing.T) {
@@ -215,7 +221,7 @@ func TestACLUsers(t *testing.T) {
 		list, err := client.Do(ctx, "acl", "users").Result()
 
 		require.NoError(t, err)
-		assert.Equal(t, []interface{}([]interface{}{"acl-user-1", "acl-user-2"}), list)
+		assert.ElementsMatch(t, []interface{}([]interface{}{"pedis", "acl-user-1", "acl-user-2"}), list)
 
 	})
 }

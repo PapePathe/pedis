@@ -1,10 +1,5 @@
 package commands
 
-import (
-	"log"
-	"pedis/internal/response"
-)
-
 type HelloHandler struct{}
 
 func (ch HelloHandler) Authorize(ClientRequest) error {
@@ -20,19 +15,31 @@ func (ch HelloHandler) Persistent() bool {
 }
 
 func (ch HelloHandler) Handle(r ClientRequest) {
-	hr := response.HelloResponse{
-		Server:  "redis",
-		Version: "6.2.1",
-		Mode:    "standalone",
-		Proto:   3,
-		Role:    "master",
-	}
+	data := r.DataRaw.ReadArray()
+	r.Logger.Info().Interface("Parameters", data).Msg("")
 
-	_, err := r.Write(hr.Render())
-
+	user, err := r.Store.GetUser(data[1])
 	if err != nil {
-		log.Println(err)
+		r.WriteError(err.Error())
+		return
 	}
+
+	if user.AnyPassword {
+		r.WriteOK()
+		return
+	}
+
+	if len(data) == 2 {
+		r.WriteError("Password must be supplied")
+		return
+	}
+
+	if err := user.Authenticate(data[2]); err != nil {
+		r.WriteError(err.Error())
+		return
+	}
+
+	r.WriteOK()
 }
 
 func init() {
