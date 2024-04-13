@@ -22,6 +22,8 @@ func DefaultRequestHandler() *RequestHandler {
 		"acl": AclHandler{},
 
 		"del": DelHandler{},
+		"get": GetHandler{},
+		"set": SetHandler{},
 
 		// hash related commands
 		"hexists": HExistsHandler{},
@@ -50,10 +52,6 @@ func (s RequestHandler) Run(request ClientRequest) {
 		go h.Handle(request)
 	} else {
 		switch subcommand {
-		case "get":
-			go GetHandler(request.Data, request.Store, request.Conn)
-		case "set":
-			go SetHandler(request.Data, request.Store, request.Conn)
 		case "client":
 			request.WriteString("OK")
 			request.Logger.Debug().Msg("going to execute client options command")

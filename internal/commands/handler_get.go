@@ -1,17 +1,29 @@
 package commands
 
 import (
-	"net"
 	"pedis/internal/renderer"
-	"pedis/internal/storage"
 )
 
-func GetHandler(items [][]byte, store storage.Storage, conn net.Conn) {
-	val, err := store.Get(string(items[4]))
+type GetHandler struct{}
+
+func (ch GetHandler) Authorize(ClientRequest) error {
+	return nil
+}
+
+func (ch GetHandler) Permissions() []string {
+	return nil
+}
+
+func (ch GetHandler) Persistent() bool {
+	return true
+}
+
+func (ch GetHandler) Handle(r ClientRequest) {
+	val, err := r.Store.Get(string(r.Data[4]))
 	if err != nil {
-		conn.Write([]byte("-ERR key not found\r\n"))
+		r.Write([]byte("-ERR key not found\r\n"))
 	}
 
-	r := renderer.BulkStringRenderer{}
-	conn.Write(r.Render(val))
+	rr := renderer.BulkStringRenderer{}
+	r.Write(rr.Render(val))
 }
