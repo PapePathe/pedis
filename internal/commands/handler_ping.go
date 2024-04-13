@@ -1,5 +1,7 @@
 package commands
 
+import "log"
+
 type PingHandler struct{}
 
 func (ch PingHandler) Authorize(IClientRequest) error {
@@ -7,7 +9,10 @@ func (ch PingHandler) Authorize(IClientRequest) error {
 }
 
 func (ch PingHandler) Permissions(IClientRequest) []string {
-	return []string{}
+	return []string{
+		"fast",
+		"connection",
+	}
 }
 
 func (ch PingHandler) Persistent(IClientRequest) bool {
@@ -18,11 +23,17 @@ func (ch PingHandler) Handle(r IClientRequest) {
 	data := r.DataRaw().ReadArray()
 
 	if len(data) == 0 {
-		r.WriteString("PONG")
+		err := r.WriteString("PONG")
+		if err != nil {
+			log.Println("error writing to client", err)
+		}
 		return
 	}
 
-	r.WriteString(data[0])
+	err := r.WriteString(data[0])
+	if err != nil {
+		log.Println("error writing to client", err)
+	}
 }
 
 func init() {
