@@ -18,13 +18,25 @@ func (ch AuthHandler) Handle(r ClientRequest) {
 	data := r.DataRaw.ReadArray()
 	r.Logger.Info().Interface("auth params", data).Msg("")
 
-	if len(data) < 2 {
-		r.WriteError("password is required")
-	}
-
-	_, err := r.Store.GetUser(data[0])
+	user, err := r.Store.GetUser(data[0])
 	if err != nil {
 		r.WriteError(err.Error())
+		return
+	}
+
+	if user.AnyPassword {
+		r.WriteOK()
+		return
+	}
+
+	if len(data) == 1 {
+		r.WriteError("Password must be supplied")
+		return
+	}
+
+	if err := user.Authenticate(data[1]); err != nil {
+		r.WriteError(err.Error())
+		return
 	}
 
 	r.WriteOK()

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"os"
@@ -50,7 +51,8 @@ type PedisServer struct {
 
 	storageProposeChan chan storage.StorageData
 
-	logger zerolog.Logger
+	logger   zerolog.Logger
+	listener net.Listener
 }
 
 func NewPedisServer(
@@ -117,6 +119,7 @@ func (rs *PedisServer) AddHandler(firstByte string, c RedisCommand) error {
 
 	return nil
 }
+
 func (s *PedisServer) StartPedis() error {
 	listener, err := net.Listen("tcp", s.addr)
 	if err != nil {
@@ -124,6 +127,7 @@ func (s *PedisServer) StartPedis() error {
 	}
 
 	defer listener.Close()
+	s.listener = listener
 
 	for {
 		s.logger.Debug().Msg("received new connection")
@@ -229,6 +233,13 @@ func (s *PedisServer) GetSnapshot() ([]byte, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return json.Marshal(s.kvStore)
+}
+
+func (s *PedisServer) PedisAddr() (*net.TCPAddr, error) {
+	if s.listener == nil {
+		return nil, errors.New("listener is not started or assigned")
+	}
+	return s.listener.Addr().(*net.TCPAddr), nil
 }
 
 func (s *PedisServer) loadSnapshot() (*raftpb.Snapshot, error) {

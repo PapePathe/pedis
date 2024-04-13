@@ -1,15 +1,5 @@
 package storage
 
-type AclRule struct {
-	Command    string
-	KeyPattern string
-}
-type User struct {
-	Passwords []string
-	Rules     []AclRule
-	Active    bool
-}
-
 type Storage interface {
 	// Users
 	GetUser(key string) (*User, error)

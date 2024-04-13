@@ -14,35 +14,9 @@
 
 package praft
 
-//func Test_kvstore_snapshot(t *testing.T) {
-//	tm := map[string]string{"foo": "bar"}
-//	s := &kvstore{kvStore: tm}
-//
-//	v, _ := s.Lookup("foo")
-//	if v != "bar" {
-//		t.Fatalf("foo has unexpected value, got %s", v)
-//	}
-//
-//	data, err := s.getSnapshot()
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	s.kvStore = nil
-//
-//	if err := s.recoverFromSnapshot(data); err != nil {
-//		t.Fatal(err)
-//	}
-//	v, _ = s.Lookup("foo")
-//	if v != "bar" {
-//		t.Fatalf("foo has unexpected value, got %s", v)
-//	}
-//	if !reflect.DeepEqual(s.kvStore, tm) {
-//		t.Fatalf("store expected %+v, got %+v", tm, s.kvStore)
-//	}
-//}
-
 import (
 	"context"
+	"fmt"
 	"pedis/internal/storage"
 	"testing"
 	"time"
@@ -52,49 +26,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCluster(t *testing.T) {
+func initClientAndServer(t *testing.T, port int) (*PedisServer, *redis.Client) {
 	storageProposeChan := make(chan storage.StorageData)
 
 	s := NewPedisServer(
-		"localhost:6399",
+		fmt.Sprintf("127.0.0.1:%d", port),
 		storage.NewSimpleStorage(storageProposeChan),
 	)
 
-	go s.StartPedis()
-
-	ctx := context.Background()
 	client := redis.NewClient(&redis.Options{
-		Addr:             "localhost:6399",
+		Addr:             fmt.Sprintf("127.0.0.1:%d", port),
 		Password:         "",
 		DB:               0,
 		DisableIndentity: true,
 	})
+	return s, client
+}
+
+func TestCluster(t *testing.T) {
+	s, client := initClientAndServer(t, 9000)
+	go s.StartPedis()
+
+	ctx := context.Background()
 
 	t.Run("CLUSTER MEET", func(t *testing.T) {
 		_, err := client.Do(ctx, "cluster", "meet", "2", "http://127.0.0.1:22222").Result()
 
 		require.NoError(t, err)
 	})
-
 }
 
 func TestServerSetAndGet(t *testing.T) {
-	storageProposeChan := make(chan storage.StorageData)
-
-	s := NewPedisServer(
-		"localhost:6379",
-		storage.NewSimpleStorage(storageProposeChan),
-	)
-
-	go s.StartPedis()
-
 	ctx := context.Background()
-	client := redis.NewClient(&redis.Options{
-		Addr:             "localhost:6379",
-		Password:         "",
-		DB:               0,
-		DisableIndentity: true,
-	})
+	s, client := initClientAndServer(t, 9001)
+	go s.StartPedis()
 
 	t.Run("Can set a value with expiration date", func(t *testing.T) {
 		err := client.Set(context.Background(), "key", "value", 2*time.Minute).Err()
@@ -114,6 +79,12 @@ func TestServerSetAndGet(t *testing.T) {
 		assert.Equal(t, int64(1), resultDel)
 
 	})
+}
+
+func TestDEL(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9002)
+	go s.StartPedis()
 
 	t.Run("DEL", func(t *testing.T) {
 		t.Parallel()
@@ -136,104 +107,163 @@ func TestServerSetAndGet(t *testing.T) {
 			assert.Equal(t, int64(1), resultDel)
 		})
 	})
+}
 
-	t.Run("ACL", func(t *testing.T) {
-		t.Parallel()
+func TestACLCat(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9003)
+	go s.StartPedis()
 
-		t.Run("CAT", func(t *testing.T) {
-			t.SkipNow()
-			_, err := client.Do(ctx, "acl", "cat").Result()
+	t.Parallel()
 
-			require.NoError(t, err)
-		})
+	t.Run("CAT", func(t *testing.T) {
+		t.SkipNow()
+		_, err := client.Do(ctx, "acl", "cat").Result()
 
-		t.Run("CAT dangerous", func(t *testing.T) {
-			t.SkipNow()
-			_, err := client.Do(ctx, "acl", "cat", "dangerous").Result()
-
-			require.NoError(t, err)
-		})
-
-		t.Run("CAT dangerous", func(t *testing.T) {
-			t.SkipNow()
-			_, err := client.Do(ctx, "acl", "cat", "dangerous").Result()
-
-			require.NoError(t, err)
-		})
-
-		t.Run("SETUSER-1", func(t *testing.T) {
-			_, err := client.Do(ctx, "acl", "setuser", "pathe-s").Result()
-
-			require.NoError(t, err)
-			_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
-		})
-
-		t.Run("SETUSER-2", func(t *testing.T) {
-			_, err := client.Do(ctx, "acl", "setuser", "pathe-s", "on", "allkeys", "+set").Result()
-
-			require.NoError(t, err)
-			_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
-		})
-
-		t.Run("GETUSER", func(t *testing.T) {
-			t.SkipNow()
-			_, err := client.Do(ctx, "acl", "getuser", "pathe").Result()
-
-			require.NoError(t, err)
-		})
-
-		t.Run("USERS-1", func(t *testing.T) {
-			list, err := client.Do(ctx, "acl", "users").Result()
-
-			require.NoError(t, err)
-			assert.Equal(t, []interface{}{}, list)
-		})
-
-		t.Run("USERS-2", func(t *testing.T) {
-			_, _ = client.Do(ctx, "acl", "setuser", "acl-user-1").Result()
-			_, _ = client.Do(ctx, "acl", "setuser", "acl-user-2").Result()
-
-			list, err := client.Do(ctx, "acl", "users").Result()
-
-			require.NoError(t, err)
-			assert.Equal(t, []interface{}([]interface{}{"acl-user-1", "acl-user-2"}), list)
-
-		})
-
-		t.Run("DELUSER-1", func(t *testing.T) {
-			_, _ = client.Do(ctx, "acl", "setuser", "pathe-1").Result()
-			_, _ = client.Do(ctx, "acl", "setuser", "mado-1").Result()
-			count, err := client.Do(ctx, "acl", "deluser", "pathe-1", "mado-1").Result()
-
-			require.NoError(t, err)
-			assert.Equal(t, int64(2), count)
-		})
-
-		t.Run("DELUSER-2", func(t *testing.T) {
-			_, _ = client.Do(ctx, "acl", "setuser", "pathe-2").Result()
-			count, err := client.Do(ctx, "acl", "deluser", "pathe-2", "mado").Result()
-
-			require.NoError(t, err)
-			assert.Equal(t, int64(1), count)
-		})
-
-		t.Run("DELUSER-3", func(t *testing.T) {
-			count, err := client.Do(ctx, "acl", "deluser", "pathe-3", "mado").Result()
-
-			require.NoError(t, err)
-			assert.Equal(t, int64(0), count)
-		})
-
-		t.Run("DRYRUN", func(t *testing.T) {
-			t.SkipNow()
-			_, err := client.Do(ctx, "acl", "dryrun", "pathe", "get", "foo").Result()
-
-			require.NoError(t, err)
-		})
+		require.NoError(t, err)
 	})
 
+	t.Run("CAT dangerous", func(t *testing.T) {
+		t.SkipNow()
+		_, err := client.Do(ctx, "acl", "cat", "dangerous").Result()
+
+		require.NoError(t, err)
+	})
+
+	t.Run("CAT dangerous", func(t *testing.T) {
+		t.SkipNow()
+		_, err := client.Do(ctx, "acl", "cat", "dangerous").Result()
+
+		require.NoError(t, err)
+	})
+}
+
+func TestACLAuth(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9004)
+	go s.StartPedis()
+
+	t.Run("AUTH-1", func(t *testing.T) {
+		existingUser := "existingUser"
+		user404 := "user:404"
+
+		_, err := client.Do(ctx, "acl", "setuser", existingUser, "on", ">weak-password:").Result()
+		require.NoError(t, err)
+
+		_, err = client.Do(ctx, "auth", existingUser).Result()
+		require.Error(t, err)
+
+		_, err = client.Do(ctx, "auth", existingUser, "weak-password").Result()
+		require.NoError(t, err)
+
+		_, err = client.Do(ctx, "auth", user404, "weak-password").Result()
+		require.Error(t, err)
+	})
+}
+
+func TestACLSetUser(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9005)
+	go s.StartPedis()
+
+	t.Run("SETUSER-1", func(t *testing.T) {
+		_, err := client.Do(ctx, "acl", "setuser", "pathe-s").Result()
+		require.NoError(t, err)
+
+		_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
+		require.NoError(t, err)
+	})
+
+	t.Run("SETUSER-2", func(t *testing.T) {
+		_, err := client.Do(ctx, "acl", "setuser", "pathe-s", "on").Result()
+		require.NoError(t, err)
+
+		_, err = client.Do(ctx, "acl", "deluser", "pathe-s", "mado-1").Result()
+		require.NoError(t, err)
+	})
+}
+
+func TestACLGetUser(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9006)
+	go s.StartPedis()
+
+	t.Run("GETUSER", func(t *testing.T) {
+		t.SkipNow()
+		_, err := client.Do(ctx, "acl", "getuser", "pathe").Result()
+
+		require.NoError(t, err)
+	})
+}
+
+func TestACLUsers(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9007)
+	go s.StartPedis()
+
+	t.Run("USERS-1", func(t *testing.T) {
+		list, err := client.Do(ctx, "acl", "users").Result()
+
+		require.NoError(t, err)
+		assert.Equal(t, []interface{}{}, list)
+	})
+
+	t.Run("USERS-2", func(t *testing.T) {
+		_, _ = client.Do(ctx, "acl", "setuser", "acl-user-1").Result()
+		_, _ = client.Do(ctx, "acl", "setuser", "acl-user-2").Result()
+
+		list, err := client.Do(ctx, "acl", "users").Result()
+
+		require.NoError(t, err)
+		assert.Equal(t, []interface{}([]interface{}{"acl-user-1", "acl-user-2"}), list)
+
+	})
+}
+
+func TestACLDelUser(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9008)
+	go s.StartPedis()
+
+	t.Run("DELUSER-1", func(t *testing.T) {
+		_, _ = client.Do(ctx, "acl", "setuser", "pathe-1").Result()
+		_, _ = client.Do(ctx, "acl", "setuser", "mado-1").Result()
+		count, err := client.Do(ctx, "acl", "deluser", "pathe-1", "mado-1").Result()
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(2), count)
+	})
+
+	t.Run("DELUSER-2", func(t *testing.T) {
+		_, _ = client.Do(ctx, "acl", "setuser", "pathe-2").Result()
+		count, err := client.Do(ctx, "acl", "deluser", "pathe-2", "mado").Result()
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), count)
+	})
+
+	t.Run("DELUSER-3", func(t *testing.T) {
+		count, err := client.Do(ctx, "acl", "deluser", "pathe-3", "mado").Result()
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), count)
+	})
+
+	t.Run("DRYRUN", func(t *testing.T) {
+		t.SkipNow()
+		_, err := client.Do(ctx, "acl", "dryrun", "pathe", "get", "foo").Result()
+
+		require.NoError(t, err)
+	})
+}
+
+func TestGetSet(t *testing.T) {
+	ctx := context.Background()
+	s, client := initClientAndServer(t, 9009)
+	go s.StartPedis()
+
 	t.Run("Cannot set a key with empty value", func(t *testing.T) {
-		err := client.Set(context.Background(), "key", "", 0).Err()
+		err := client.Set(ctx, "key", "", 0).Err()
 
 		assert.Equal(t, err.Error(), "ERR value is empty")
 	})
@@ -250,20 +280,8 @@ func TestServerSetAndGet(t *testing.T) {
 }
 
 func TestServerHSetAndHGet(t *testing.T) {
-	storageProposeChan := make(chan storage.StorageData)
-	s := NewPedisServer(
-		"localhost:6379",
-		storage.NewSimpleStorage(storageProposeChan),
-	)
-
+	s, client := initClientAndServer(t, 9010)
 	go s.StartPedis()
-
-	client := redis.NewClient(&redis.Options{
-		Addr:             "localhost:6379",
-		Password:         "",
-		DB:               0,
-		DisableIndentity: true,
-	})
 
 	t.Run("Can set and get a hash", func(t *testing.T) {
 		//	m := map[string]interface{}{"key-one": "one value", "key-two": "two value"}

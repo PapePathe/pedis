@@ -65,8 +65,31 @@ func (aclService) setuser(r ClientRequest) error {
 	data := r.DataRaw.ReadArray()
 	r.Logger.Debug().Msg("Going to create or update existing user")
 	username := data[1]
+	rules := []storage.AclRule{}
 
-	_ = r.Store.SetUser(username, []storage.AclRule{})
+	if len(data) >= 2 {
+		for _, elem := range data[2:] {
+			switch elem {
+			case "on":
+				rules = append(rules, storage.AclRule{Type: storage.AclActivateUser})
+			case "off":
+				rules = append(rules, storage.AclRule{Type: storage.AclDisableUser})
+			case "nopass":
+				rules = append(rules, storage.AclRule{Type: storage.AclDisableUser})
+			case "reset":
+				rules = append(rules, storage.AclRule{Type: storage.AclResetUser})
+			default:
+				switch elem[0] {
+				case '>':
+					rules = append(rules, storage.AclRule{Type: storage.AclSetUserPassword, Value: elem[1 : len(elem)-1]})
+				default:
+					r.WriteError(fmt.Sprintf("acl rule (%s) not supported", elem))
+				}
+			}
+		}
+	}
+
+	_ = r.Store.SetUser(username, rules)
 	r.WriteOK()
 	return nil
 }
