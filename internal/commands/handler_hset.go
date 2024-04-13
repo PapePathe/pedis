@@ -41,7 +41,7 @@ func (ch HSetHandler) Handle(r ClientRequest) {
 	}
 
 	_ = hs.FromBytes(data)
-	_, _ = r.Conn.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
+	_, _ = r.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
 }
 
 type hasharray [][]byte

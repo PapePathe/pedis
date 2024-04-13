@@ -20,7 +20,6 @@ func (ch HelloHandler) Persistent() bool {
 }
 
 func (ch HelloHandler) Handle(r ClientRequest) {
-	log.Println("Respond to hello command")
 	hr := response.HelloResponse{
 		Server:  "redis",
 		Version: "6.2.1",
@@ -29,7 +28,7 @@ func (ch HelloHandler) Handle(r ClientRequest) {
 		Role:    "master",
 	}
 
-	_, err := r.Conn.Write(hr.Render())
+	_, err := r.Write(hr.Render())
 
 	if err != nil {
 		log.Println(err)
