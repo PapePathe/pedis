@@ -9,20 +9,20 @@ import (
 
 type ClusterHandler struct{}
 
-func (ch ClusterHandler) Authorize(ClientRequest) error {
+func (ch ClusterHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch ClusterHandler) Permissions() []string {
+func (ch ClusterHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch ClusterHandler) Persistent() bool {
+func (ch ClusterHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch ClusterHandler) Handle(r ClientRequest) {
-	data := r.DataRaw.ReadArray()
+func (ch ClusterHandler) Handle(r IClientRequest) {
+	data := r.DataRaw().ReadArray()
 	log.Println(data)
 
 	switch string(data[0]) {
@@ -37,7 +37,7 @@ func (ch ClusterHandler) Handle(r ClientRequest) {
 			NodeID: uint64(id),
 		}
 		r.WriteOK()
-		r.ClusterChangesChan <- cc
+		r.SendClusterConfigChange(cc)
 
 	case "meet":
 		id, err := strconv.Atoi(data[1])
@@ -52,7 +52,7 @@ func (ch ClusterHandler) Handle(r ClientRequest) {
 			Context: []byte(data[2]),
 		}
 		r.WriteOK()
-		r.ClusterChangesChan <- cc
+		r.SendClusterConfigChange(cc)
 	default:
 		r.WriteError("subcommand not found")
 	}

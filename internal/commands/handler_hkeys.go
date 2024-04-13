@@ -2,22 +2,20 @@ package commands
 
 type HKeysHandler struct{}
 
-func (ch HKeysHandler) Authorize(ClientRequest) error {
+func (ch HKeysHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch HKeysHandler) Permissions() []string {
+func (ch HKeysHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch HKeysHandler) Persistent() bool {
+func (ch HKeysHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch HKeysHandler) Handle(r ClientRequest) {
-	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hkeys handler")
-
-	data, err := r.Store.HGet(string(r.Data[4]))
+func (ch HKeysHandler) Handle(r IClientRequest) {
+	data, err := r.Store().HGet(string(r.Data()[4]))
 
 	if err != nil {
 		_ = r.WriteArray([]string{})

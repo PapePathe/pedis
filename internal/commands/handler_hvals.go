@@ -2,22 +2,20 @@ package commands
 
 type HValsHandler struct{}
 
-func (ch HValsHandler) Authorize(ClientRequest) error {
+func (ch HValsHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch HValsHandler) Permissions() []string {
+func (ch HValsHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch HValsHandler) Persistent() bool {
+func (ch HValsHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch HValsHandler) Handle(r ClientRequest) {
-	r.Logger.Debug().Str("key", string(r.Data[4])).Msg("hvals handler")
-
-	data, err := r.Store.HGet(string(r.Data[4]))
+func (ch HValsHandler) Handle(r IClientRequest) {
+	data, err := r.Store().HGet(string(r.Data()[4]))
 
 	if err != nil {
 		_ = r.WriteArray([]string{})

@@ -2,23 +2,22 @@ package commands
 
 type HelloHandler struct{}
 
-func (ch HelloHandler) Authorize(ClientRequest) error {
+func (ch HelloHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch HelloHandler) Permissions() []string {
+func (ch HelloHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch HelloHandler) Persistent() bool {
+func (ch HelloHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch HelloHandler) Handle(r ClientRequest) {
-	data := r.DataRaw.ReadArray()
-	r.Logger.Info().Interface("Parameters", data).Msg("")
+func (ch HelloHandler) Handle(r IClientRequest) {
+	data := r.DataRaw().ReadArray()
 
-	user, err := r.Store.GetUser(data[1])
+	user, err := r.Store().GetUser(data[1])
 	if err != nil {
 		r.WriteError(err.Error())
 		return

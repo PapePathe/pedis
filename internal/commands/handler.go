@@ -2,11 +2,11 @@ package commands
 
 type CommandHandler interface {
 	// Runs the request and write response to client
-	Handle(ClientRequest)
+	Handle(IClientRequest)
 	// Checks that calling user has the permissions required by the command
-	Authorize(ClientRequest) error
+	Authorize(IClientRequest) error
 	// Returns the list of permissions required to run the command
-	Permissions() []string
+	Permissions(IClientRequest) []string
 	// Returns true if the command is going to persist data
-	Persistent() bool
+	Persistent(IClientRequest) bool
 }

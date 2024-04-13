@@ -10,21 +10,20 @@ import (
 
 type HSetHandler struct{}
 
-func (ch HSetHandler) Authorize(ClientRequest) error {
+func (ch HSetHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch HSetHandler) Permissions() []string {
+func (ch HSetHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch HSetHandler) Persistent() bool {
+func (ch HSetHandler) Persistent(IClientRequest) bool {
 	return true
 }
 
-func (ch HSetHandler) Handle(r ClientRequest) {
-	r.Logger.Info().Str("hset key", string(r.Data[4])).Msg("hset handler")
-	hs := chunkSlice(r.Data[5:], 4)
+func (ch HSetHandler) Handle(r IClientRequest) {
+	hs := chunkSlice(r.Data()[5:], 4)
 
 	data, err := hs.ToBytes()
 
@@ -33,7 +32,7 @@ func (ch HSetHandler) Handle(r ClientRequest) {
 		return
 	}
 
-	_, err = r.Store.HSet(string(r.Data[4]), data, 0)
+	_, err = r.Store().HSet(string(r.Data()[4]), data, 0)
 
 	if err != nil {
 		r.WriteError(err.Error())

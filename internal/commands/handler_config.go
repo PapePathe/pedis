@@ -2,19 +2,19 @@ package commands
 
 type ConfigHandler struct{}
 
-func (ch ConfigHandler) Authorize(ClientRequest) error {
+func (ch ConfigHandler) Authorize(IClientRequest) error {
 	return nil
 }
 
-func (ch ConfigHandler) Permissions() []string {
+func (ch ConfigHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
-func (ch ConfigHandler) Persistent() bool {
+func (ch ConfigHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
-func (ch ConfigHandler) Handle(r ClientRequest) {
+func (ch ConfigHandler) Handle(r IClientRequest) {
 	r.WriteError("not yet implemented")
 }
 
