@@ -21,6 +21,10 @@ func (ch ClusterHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch ClusterHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch ClusterHandler) Handle(r IClientRequest) {
 	data := r.DataRaw().ReadArray()
 	log.Println(data)

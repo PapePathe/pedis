@@ -18,6 +18,10 @@ func (ch DelHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch DelHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch DelHandler) Handle(r IClientRequest) {
 	delCount := 0
 

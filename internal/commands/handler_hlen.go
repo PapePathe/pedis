@@ -18,6 +18,10 @@ func (ch HLenHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch HLenHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch HLenHandler) Handle(r IClientRequest) {
 	data, err := r.Store().HGet(string(r.Data()[4]))
 

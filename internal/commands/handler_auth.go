@@ -1,5 +1,7 @@
 package commands
 
+import "log"
+
 type AuthHandler struct{}
 
 func (ch AuthHandler) Authorize(IClientRequest) error {
@@ -12,6 +14,11 @@ func (ch AuthHandler) Permissions(IClientRequest) []string {
 
 func (ch AuthHandler) Persistent(IClientRequest) bool {
 	return false
+}
+
+func (ch AuthHandler) HandlePipelined(r IClientRequest) []byte {
+	log.Println("pipelined auth")
+	return []byte{}
 }
 
 func (ch AuthHandler) Handle(r IClientRequest) {

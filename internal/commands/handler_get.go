@@ -18,6 +18,9 @@ func (ch GetHandler) Persistent(IClientRequest) bool {
 	return true
 }
 
+func (ch GetHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
 func (ch GetHandler) Handle(r IClientRequest) {
 	val, err := r.Store().Get(string(r.Data()[4]))
 	if err != nil {

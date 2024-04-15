@@ -14,6 +14,10 @@ func (ch HValsHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch HValsHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch HValsHandler) Handle(r IClientRequest) {
 	data, err := r.Store().HGet(string(r.Data()[4]))
 

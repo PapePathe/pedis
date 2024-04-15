@@ -35,6 +35,7 @@ import (
 
 type RedisCommand interface {
 	Run(commands.IClientRequest)
+	RunPipelined(commands.IClientRequest) []byte
 }
 
 type PedisServerOpts struct {
@@ -147,7 +148,7 @@ func (s *PedisServer) StartPedis() error {
 
 func (rs *PedisServer) handleConnection(conn net.Conn) {
 	for {
-		b := make([]byte, 1024)
+		b := make([]byte, 2048)
 
 		size, err := conn.Read(b)
 
@@ -156,23 +157,55 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 			break
 		}
 
-		commandId := string(b[0])
-		handler, commandNotFound := rs.handlers[commandId]
+		raw := commands.RawRequest(b[0:size]).Parse()
 
-		if !commandNotFound {
-			log.Println(err)
-			continue
+		if len(raw) > 1 {
+			for _, req := range raw {
+				b := []byte(req)
+				commandId := string(b[0])
+				handler, commandNotFound := rs.handlers[commandId]
+
+				if !commandNotFound {
+					log.Println(err)
+					continue
+				}
+
+				request := commands.NewClientRequest(
+					conn,
+					bytes.Split(b[1:], []byte{13, 10}),
+					rs.store,
+					commands.RawRequest(b[0:]),
+					rs.clusterChangesChan,
+				)
+
+				response := handler.RunPipelined(request)
+				conn.Write(response)
+			}
+		} else {
+			if len(raw) == 0 {
+				continue
+			}
+
+			b := []byte(raw[0])
+			commandId := string(b[0])
+			handler, commandNotFound := rs.handlers[commandId]
+
+			if !commandNotFound {
+				log.Println(err)
+				continue
+			}
+
+			request := commands.NewClientRequest(
+				conn,
+				bytes.Split(b[1:], []byte{13, 10}),
+				rs.store,
+				commands.RawRequest(b[0:]),
+				rs.clusterChangesChan,
+			)
+
+			handler.Run(request)
+
 		}
-
-		request := commands.NewClientRequest(
-			conn,
-			bytes.Split(b[1:size], []byte{13, 10}),
-			rs.store,
-			commands.RawRequest(b[0:size]),
-			rs.clusterChangesChan,
-		)
-
-		handler.Run(request)
 	}
 }
 

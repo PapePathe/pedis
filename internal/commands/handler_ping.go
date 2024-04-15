@@ -19,6 +19,16 @@ func (ch PingHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch PingHandler) HandlePipelined(r IClientRequest) []byte {
+	data := r.DataRaw().ReadArray()
+
+	if len(data) == 0 {
+		return r.StringResponse("PONG")
+	}
+
+	return r.StringResponse(data[0])
+}
+
 func (ch PingHandler) Handle(r IClientRequest) {
 	data := r.DataRaw().ReadArray()
 

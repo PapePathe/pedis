@@ -15,6 +15,10 @@ func (ch AclHandler) Permissions(IClientRequest) []string {
 	return nil
 }
 
+func (ch AclHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch AclHandler) Persistent(IClientRequest) bool {
 	return false
 }

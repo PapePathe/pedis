@@ -18,6 +18,9 @@ func (ch SetHandler) Persistent(IClientRequest) bool {
 	return true
 }
 
+func (ch SetHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
 func (ch SetHandler) Handle(r IClientRequest) {
 	value := string(r.Data()[6])
 	if len(value) == 0 {

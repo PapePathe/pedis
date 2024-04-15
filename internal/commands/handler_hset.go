@@ -22,6 +22,10 @@ func (ch HSetHandler) Persistent(IClientRequest) bool {
 	return true
 }
 
+func (ch HSetHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch HSetHandler) Handle(r IClientRequest) {
 	hs := chunkSlice(r.Data()[5:], 4)
 

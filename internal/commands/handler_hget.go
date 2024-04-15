@@ -14,6 +14,9 @@ func (ch HGetHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch HGetHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
 func (ch HGetHandler) Handle(r IClientRequest) {
 	datat := r.DataRaw().ReadArray()
 	data, err := r.Store().HGet(datat[0])

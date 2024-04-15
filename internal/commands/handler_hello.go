@@ -14,6 +14,10 @@ func (ch HelloHandler) Persistent(IClientRequest) bool {
 	return false
 }
 
+func (ch HelloHandler) HandlePipelined(r IClientRequest) []byte {
+	return []byte{}
+}
+
 func (ch HelloHandler) Handle(r IClientRequest) {
 	data := r.DataRaw().ReadArray()
 
