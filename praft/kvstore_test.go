@@ -353,3 +353,21 @@ func TestServerHSetAndHGet(t *testing.T) {
 		assert.Equal(t, false, exists)
 	})
 }
+
+func TestPipelinedCommands(t *testing.T) {
+	s, client := initClientAndServer(t, 9011)
+	go s.StartPedis()
+	ctx := context.Background()
+
+	t.Run("respond to pipelines", func(t *testing.T) {
+		pipe := client.Pipeline()
+		_ = pipe.ConfigGet(ctx, "save")
+		_ = pipe.ConfigGet(ctx, "appendonly")
+		cmds, err := pipe.Exec(ctx)
+
+		require.NoError(t, err)
+		for _, cmd := range cmds {
+			require.NoError(t, cmd.Err())
+		}
+	})
+}

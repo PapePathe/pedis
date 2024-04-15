@@ -1,17 +1,20 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
-	"strings"
 
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
 
 type IClientRequest interface {
+	ErrorResponse(string) []byte
+	ArrayResponse([]string) []byte
+	StringResponse(string) []byte
+	OkResponse(string) []byte
+	NilResponse(string) []byte
 	WriteError(string) error
 	WriteString(string) error
 	WriteNumber(string) error
@@ -23,40 +26,6 @@ type IClientRequest interface {
 	DataRaw() RawRequest
 	Store() storage.Storage
 	SendClusterConfigChange(raftpb.ConfChange)
-}
-
-type RawRequest []byte
-
-func (r RawRequest) String() string {
-	return strings.ReplaceAll(string(r), "\\", "/")
-}
-
-func SliceAsChunks(slice [][]byte, chunkSize int) [][][]byte {
-	var chunks [][][]byte
-
-	for i := 0; i < len(slice); i += chunkSize {
-		end := i + chunkSize
-		if end > len(slice) {
-			end = len(slice)
-		}
-
-		chunks = append(chunks, slice[i:end])
-	}
-
-	return chunks
-}
-func (r RawRequest) ReadArray() []string {
-	items := bytes.Split(r[2:], []byte{13, 10})
-	sl := SliceAsChunks(items[3:], 2)
-	array := []string{}
-
-	for _, i := range sl {
-		if len(i) == 2 {
-			array = append(array, string(i[1]))
-		}
-	}
-
-	return array
 }
 
 type ClientRequest struct {
@@ -104,6 +73,11 @@ func (c ClientRequest) WriteError(s string) error {
 	return nil
 }
 
+func (c ClientRequest) ErrorResponse(s string) []byte {
+	str := fmt.Sprintf("-ERR %s\r\n", s)
+	return []byte(str)
+}
+
 func (c ClientRequest) WriteArray(a []string) error {
 	_, err := c.Conn.Write(renderer.RenderArray(a))
 	if err != nil {
@@ -111,6 +85,10 @@ func (c ClientRequest) WriteArray(a []string) error {
 	}
 
 	return nil
+}
+
+func (c ClientRequest) ArrayResponse(a []string) []byte {
+	return renderer.RenderArray(a)
 }
 
 func (c ClientRequest) WriteString(s string) error {
@@ -156,4 +134,16 @@ func (c ClientRequest) Write(data []byte) (int, error) {
 	}
 
 	return n, nil
+}
+
+func (c ClientRequest) StringResponse(string) []byte {
+	return nil
+}
+
+func (c ClientRequest) OkResponse(string) []byte {
+	return nil
+}
+
+func (c ClientRequest) NilResponse(string) []byte {
+	return nil
 }

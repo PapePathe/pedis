@@ -78,12 +78,18 @@ func main() {
 		confChangeC,
 	)
 
+	store := storage.NewSimpleStorage(storageProposeChan)
+	store.SetUser("pedis", []storage.AclRule{
+		{Type: storage.AclActivateUser},
+		{Type: storage.AclSetUserPassword, Value: "pedis"},
+	})
+
 	kvs = praft.NewKVStore(
 		<-snapshotterReady,
 		proposeC,
 		commitC,
 		errorC,
-		storage.NewSimpleStorage(storageProposeChan),
+		store,
 		*pedis,
 		storageProposeChan,
 		confChangeC,
