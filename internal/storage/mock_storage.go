@@ -3,6 +3,8 @@ package storage
 type MockStorage struct {
   GetUserFn func(string) (*User, error)
   DelUserFn func(string) (error)
+  SetUserFn func(string, []AclRule) (error)
+  UsersFn func() []string 
 }
 
 func(ms MockStorage) GetUser(key string)(*User, error) {
@@ -13,11 +15,17 @@ func(ms MockStorage) GetUser(key string)(*User, error) {
 }
 
 func(ms MockStorage) SetUser(key string, acl []AclRule)(error) {
-  return nil
+  if ms.SetUserFn == nil {
+    panic("you must provide an implementation of SetUserFn")
+  }
+  return ms.SetUserFn(key, acl)
 }
 
 func(ms MockStorage) Users()[]string {
-  return nil
+  if ms.UsersFn== nil {
+    panic("you must provide an implementation of UsersFn")
+  }
+  return ms.UsersFn()
 }
 
 func(ms MockStorage) DelUser(key string)(error) {

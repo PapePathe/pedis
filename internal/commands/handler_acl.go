@@ -20,7 +20,7 @@ func (ch AclHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch AclHandler) Handle(r IClientRequest) {
-	data := r.DataRaw().ReadArray()
+	data := r.Body()
 	svc := aclService{}
 
 	switch data[0] {
@@ -55,7 +55,7 @@ func (aclService) deluser(r IClientRequest) error {
 }
 
 func (aclService) setuser(r IClientRequest) error {
-	data := r.DataRaw().ReadArray()
+	data := r.Body()
 	username := data[1]
 	rules := []storage.AclRule{}
 
@@ -76,6 +76,7 @@ func (aclService) setuser(r IClientRequest) error {
 					rules = append(rules, storage.AclRule{Type: storage.AclSetUserPassword, Value: elem[1 : len(elem)-1]})
 				default:
 					r.WriteError(fmt.Sprintf("acl rule (%s) not supported", elem))
+          return fmt.Errorf("acl rule (%s) not supported", elem)
 				}
 			}
 		}
