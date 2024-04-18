@@ -36,7 +36,7 @@ func DefaultRequestHandler() *RequestHandler {
 }
 
 func (s RequestHandler) Run(request IClientRequest) {
-	log.Println("RedisCommand", request.DataRaw().String(), "PedisParams", request.Data())
+	log.Println("RedisCommand", request.DataRaw().String(), "PedisParams", request.DataRaw().ReadArray())
 	subcommand := strings.ToLower(string(request.Data()[2]))
 
 	if h, ok := s.subcommands[subcommand]; ok {

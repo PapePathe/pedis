@@ -6,7 +6,6 @@ import (
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
-	"strings"
 
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
@@ -29,7 +28,7 @@ type IClientRequest interface {
 type RawRequest []byte
 
 func (r RawRequest) String() string {
-	return strings.ReplaceAll(string(r), "\\", "/")
+	return fmt.Sprintf("%q", string(r))
 }
 
 func (r RawRequest) ReadArray() []string {
