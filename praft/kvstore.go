@@ -164,11 +164,13 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 			continue
 		}
 
+    rawreq := commands.RawRequest(b[0:size])
 		request := commands.NewClientRequest(
 			conn,
 			bytes.Split(b[1:size], []byte{13, 10}),
 			rs.store,
-			commands.RawRequest(b[0:size]),
+			rawreq,
+      rawreq.ReadArray(),
 			rs.clusterChangesChan,
 		)
 

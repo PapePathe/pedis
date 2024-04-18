@@ -2,7 +2,6 @@ package commands
 
 import (
 	"errors"
-	"log"
 	"pedis/internal/storage"
 
 	"go.etcd.io/etcd/raft/v3/raftpb"
@@ -32,7 +31,6 @@ func (mock *MockClient) WriteString(s string) error {
 }
 
 func (mock *MockClient) WriteNumber(s string) error {
-  log.Println("string", s)
 	mock.response = []string{s} 
 	return nil
 }

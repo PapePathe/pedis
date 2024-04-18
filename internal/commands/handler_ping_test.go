@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,29 +8,23 @@ import (
 )
 
 func TestPingHandle(t *testing.T) {
-	body := []byte("*1\r\n$4\r\nping\r\n")
+  type pingtest struct { 
+    cli MockClient 
+    rep []string 
+    name string 
+  }
+  tests := []pingtest{
+    {name: "with empty body", cli:  MockClient{ body: []string{}}, rep: []string{"PONG" }},
+    {name: "with custom pong", cli:  MockClient{ body: []string{"nangadef"}}, rep: []string{"nangadef" }},
+  }
+
 	h := PingHandler{}
-	r := MockClient{
-		r: RawRequest(body),
-		d: bytes.Split(body, []byte{13, 10}),
-	}
-
-	h.Handle(&r)
-
-	assert.Equal(t, []string{"PONG"}, r.response)
-}
-
-func TestCustomPingHandle(t *testing.T) {
-	body := []byte("*1\r\n$4\r\nping\r\n$4\r\nnangadef\r\n")
-	h := PingHandler{}
-	r := MockClient{
-		r: RawRequest(body),
-		d: bytes.Split(body, []byte{13, 10}),
-	}
-
-	h.Handle(&r)
-
-	assert.Equal(t, []string{"nangadef"}, r.response)
+  for _, test := range  tests {
+     t.Run(test.name, func(t *testing.T){
+        h.Handle(&test.cli)
+        assert.Equal(t, test.rep, test.cli.response)
+      })
+  }
 }
 
 func TestPingPermissions(t *testing.T) {
