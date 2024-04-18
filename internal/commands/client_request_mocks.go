@@ -20,7 +20,7 @@ type MockClient struct {
   store  storage.Storage
 }
 
-func (mock MockClient) WriteError(e string) error {
+func (mock *MockClient) WriteError(e string) error {
 	mock.errors = append(mock.errors, e)
 	return nil
 }
