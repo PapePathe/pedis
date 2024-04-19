@@ -1,6 +1,7 @@
 package commands
 
 import "fmt"
+import "log"
 
 // ACL categories: @keyspace, @write, @slow
 
@@ -15,21 +16,21 @@ func (ch DelHandler) Permissions(IClientRequest) []string {
 }
 
 func (ch DelHandler) Persistent(IClientRequest) bool {
-	return false
+	return true
 }
 
 func (ch DelHandler) Handle(r IClientRequest) {
 	delCount := 0
 
-	for _, key := range r.DataRaw().ReadArray() {
+	for _, key := range r.Body() {
 		err := r.Store().Del(key)
 
-		if err != nil {
-			continue
+		if err == nil {
+      delCount++
 		}
-
-		delCount++
 	}
+
+  log.Println("del-count", delCount)
 
 	r.WriteNumber(fmt.Sprintf("%d", delCount))
 }

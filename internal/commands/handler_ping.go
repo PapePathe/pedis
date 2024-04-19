@@ -20,9 +20,7 @@ func (ch PingHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch PingHandler) Handle(r IClientRequest) {
-	data := r.DataRaw().ReadArray()
-
-	if len(data) == 0 {
+	if len(r.Body()) == 0 {
 		err := r.WriteString("PONG")
 		if err != nil {
 			log.Println("error writing to client", err)
@@ -30,7 +28,7 @@ func (ch PingHandler) Handle(r IClientRequest) {
 		return
 	}
 
-	err := r.WriteString(data[0])
+	err := r.WriteString(r.Body()[0])
 	if err != nil {
 		log.Println("error writing to client", err)
 	}

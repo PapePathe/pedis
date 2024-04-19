@@ -1,9 +1,5 @@
 package commands
 
-import (
-	"pedis/internal/renderer"
-)
-
 type GetHandler struct{}
 
 func (ch GetHandler) Authorize(IClientRequest) error {
@@ -15,17 +11,17 @@ func (ch GetHandler) Permissions(IClientRequest) []string {
 }
 
 func (ch GetHandler) Persistent(IClientRequest) bool {
-	return true
+	return false 
 }
 
 func (ch GetHandler) Handle(r IClientRequest) {
-	val, err := r.Store().Get(string(r.Data()[4]))
+  body := r.Body()
+	val, err := r.Store().Get(body[0])
 	if err != nil {
-		r.Write([]byte("-ERR key not found\r\n"))
+		r.WriteError(err.Error())
 	}
 
-	rr := renderer.BulkStringRenderer{}
-	r.Write(rr.Render(val))
+	r.WriteString(val)
 }
 
 func init() {

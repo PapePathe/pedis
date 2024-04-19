@@ -1,9 +1,10 @@
 package commands
 
+
 type AuthHandler struct{}
 
 func (ch AuthHandler) Authorize(IClientRequest) error {
-	return nil
+  return nil
 }
 
 func (ch AuthHandler) Permissions(IClientRequest) []string {
@@ -15,7 +16,7 @@ func (ch AuthHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch AuthHandler) Handle(r IClientRequest) {
-	data := r.DataRaw().ReadArray()
+	data := r.Body()
 
 	user, err := r.Store().GetUser(data[0])
 	if err != nil {

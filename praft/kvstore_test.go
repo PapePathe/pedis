@@ -28,7 +28,6 @@ import (
 
 func initClientAndServer(t *testing.T, port int) (*PedisServer, *redis.Client) {
 	storageProposeChan := make(chan storage.StorageData)
-
 	store := storage.NewSimpleStorage(storageProposeChan)
 	store.SetUser("pedis", []storage.AclRule{
 		{Type: storage.AclActivateUser},
@@ -271,7 +270,7 @@ func TestGetSet(t *testing.T) {
 	t.Run("Cannot set a key with empty value", func(t *testing.T) {
 		err := client.Set(ctx, "key", "", 0).Err()
 
-		assert.Equal(t, err.Error(), "ERR value is empty")
+		assert.Equal(t, "ERR value is empty", err.Error())
 	})
 
 	t.Run("Cannot set a empty string as key", func(t *testing.T) {

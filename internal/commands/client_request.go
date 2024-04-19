@@ -6,7 +6,6 @@ import (
 	"net"
 	"pedis/internal/renderer"
 	"pedis/internal/storage"
-	"strings"
 
 	"go.etcd.io/etcd/raft/v3/raftpb"
 )
@@ -19,8 +18,8 @@ type IClientRequest interface {
 	WriteOK() error
 	WriteNil() error
 	Write([]byte) (int, error)
-	Data() [][]byte
-	DataRaw() RawRequest
+	Header() string
+	Body() []string
 	Store() storage.Storage
 	SendClusterConfigChange(raftpb.ConfChange)
 }
@@ -28,7 +27,27 @@ type IClientRequest interface {
 type RawRequest []byte
 
 func (r RawRequest) String() string {
-	return strings.ReplaceAll(string(r), "\\", "/")
+	return fmt.Sprintf("%q", string(r))
+}
+
+func (r RawRequest) ReadHeader() string {
+	items := bytes.Split(r[2:], []byte{13, 10})
+
+	return string(items[2])
+}
+
+func (r RawRequest) ReadArray() []string {
+	items := bytes.Split(r[2:], []byte{13, 10})
+	sl := SliceAsChunks(items[3:], 2)
+	array := []string{}
+
+	for _, i := range sl {
+		if len(i) == 2 {
+			array = append(array, string(i[1]))
+		}
+	}
+
+	return array
 }
 
 func SliceAsChunks(slice [][]byte, chunkSize int) [][][]byte {
@@ -45,34 +64,27 @@ func SliceAsChunks(slice [][]byte, chunkSize int) [][][]byte {
 
 	return chunks
 }
-func (r RawRequest) ReadArray() []string {
-	items := bytes.Split(r[2:], []byte{13, 10})
-	sl := SliceAsChunks(items[3:], 2)
-	array := []string{}
-
-	for _, i := range sl {
-		if len(i) == 2 {
-			array = append(array, string(i[1]))
-		}
-	}
-
-	return array
-}
 
 type ClientRequest struct {
 	Conn               net.Conn
-	data               [][]byte
-	dataRaw            RawRequest
+	body               []string
+	header             string
 	store              storage.Storage
 	clusterChangesChan chan<- raftpb.ConfChange
 }
 
-func NewClientRequest(c net.Conn, d [][]byte, s storage.Storage, rd RawRequest, cchan chan<- raftpb.ConfChange) IClientRequest {
+func NewClientRequest(
+	c net.Conn,
+	s storage.Storage,
+	body []string,
+	header string,
+	cchan chan<- raftpb.ConfChange,
+) IClientRequest {
 	return ClientRequest{
 		Conn:               c,
-		data:               d,
 		store:              s,
-		dataRaw:            rd,
+		body:               body,
+		header:             header,
 		clusterChangesChan: cchan,
 	}
 
@@ -82,12 +94,12 @@ func (c ClientRequest) SendClusterConfigChange(cc raftpb.ConfChange) {
 	c.clusterChangesChan <- cc
 }
 
-func (c ClientRequest) Data() [][]byte {
-	return c.data
+func (c ClientRequest) Body() []string {
+	return c.body
 }
 
-func (c ClientRequest) DataRaw() RawRequest {
-	return c.dataRaw
+func (c ClientRequest) Header() string {
+	return c.header
 }
 
 func (c ClientRequest) Store() storage.Storage {

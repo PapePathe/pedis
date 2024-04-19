@@ -15,7 +15,7 @@ func (ch HelloHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch HelloHandler) Handle(r IClientRequest) {
-	data := r.DataRaw().ReadArray()
+	data := r.Body()
 
 	user, err := r.Store().GetUser(data[1])
 	if err != nil {

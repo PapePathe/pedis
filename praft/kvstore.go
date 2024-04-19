@@ -58,6 +58,9 @@ type PedisServer struct {
 
 	logger   zerolog.Logger
 	listener net.Listener
+
+	clients     map[net.Conn]struct{}
+	clientsLock sync.Mutex
 }
 
 func NewPedisServer(
@@ -135,11 +138,11 @@ func (s *PedisServer) StartPedis() error {
 	s.listener = listener
 
 	for {
-		s.logger.Debug().Msg("received new connection")
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Println("Error accepting connection:", err)
 		}
+		s.logger.Debug().Msg("received new connection")
 
 		go s.handleConnection(conn)
 	}
@@ -164,14 +167,22 @@ func (rs *PedisServer) handleConnection(conn net.Conn) {
 			continue
 		}
 
+		rawreq := commands.RawRequest(b[0:size])
 		request := commands.NewClientRequest(
 			conn,
-			bytes.Split(b[1:size], []byte{13, 10}),
 			rs.store,
-			commands.RawRequest(b[0:size]),
+			rawreq.ReadArray(),
+			rawreq.ReadHeader(),
 			rs.clusterChangesChan,
 		)
-
+		log.Println(
+			"RedisCommand",
+			rawreq.String(),
+			"PedisHeader",
+			rawreq.ReadHeader(),
+			"PedisParams",
+			request.Body(),
+		)
 		handler.Run(request)
 	}
 }

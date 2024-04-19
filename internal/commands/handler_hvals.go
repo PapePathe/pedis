@@ -15,7 +15,8 @@ func (ch HValsHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch HValsHandler) Handle(r IClientRequest) {
-	data, err := r.Store().HGet(string(r.Data()[4]))
+	body := r.Body()
+	data, err := r.Store().HGet(body[0])
 
 	if err != nil {
 		_ = r.WriteArray([]string{})
