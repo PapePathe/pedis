@@ -15,8 +15,8 @@ func (ch HGetHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch HGetHandler) Handle(r IClientRequest) {
-	datat := r.DataRaw().ReadArray()
-	data, err := r.Store().HGet(datat[0])
+	body := r.Body()
+	data, err := r.Store().HGet(body[0])
 
 	if err != nil {
 		_ = r.WriteNil()
@@ -26,7 +26,7 @@ func (ch HGetHandler) Handle(r IClientRequest) {
 	hs := hset{}
 	hs.FromBytes(data)
 
-	value, err := hs.Get(datat[1])
+	value, err := hs.Get(body[1])
 
 	if err != nil {
 		_ = r.WriteNil()
