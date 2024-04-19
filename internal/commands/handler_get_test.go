@@ -9,9 +9,9 @@ import (
 )
 
 
-func TestGetHandlerPersistend(t *testing.T)  {
+func TestGetHandlerPersistent(t *testing.T)  {
   h := GetHandler{}
-  assert.True(t, h.Persistent(&MockClient{}))
+  assert.False(t, h.Persistent(&MockClient{}))
 }
 
 func TestGetHandler(t *testing.T) {
@@ -35,7 +35,7 @@ func TestGetHandler(t *testing.T) {
       err: []string{"key key:404 not found"},
     },
     { 
-      name: "get a key that does not exist",
+      name: "get a key that does exist",
       req: &MockClient{
         body: []string{ "key:200" },
         store: storage.MockStorage{

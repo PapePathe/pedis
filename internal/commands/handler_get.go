@@ -11,7 +11,7 @@ func (ch GetHandler) Permissions(IClientRequest) []string {
 }
 
 func (ch GetHandler) Persistent(IClientRequest) bool {
-	return true
+	return false 
 }
 
 func (ch GetHandler) Handle(r IClientRequest) {
