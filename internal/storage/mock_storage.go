@@ -5,6 +5,7 @@ type MockStorage struct {
   DelUserFn func(string) (error)
   SetUserFn func(string, []AclRule) (error)
   UsersFn func() []string 
+  GetFn func(string) (string, error)
 }
 
 func(ms MockStorage) GetUser(key string)(*User, error) {
@@ -40,7 +41,10 @@ func(ms MockStorage) Del(key string)(error) {
 }
 
 func(ms MockStorage) Get(key string)(string, error) {
-  return "", nil
+  if ms.GetFn == nil {
+    panic("you must provide an implementation of GetFn")
+  }
+  return ms.GetFn(key)
 }
 
 func(ms MockStorage) Set(key string, v string, i int64)(error) {
