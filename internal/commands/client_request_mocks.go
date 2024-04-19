@@ -15,6 +15,7 @@ type MockClient struct {
 	r          RawRequest
 	d          [][]byte
 	body       []string
+	header     string
 	response   []string
 	errors     []string
 	store      storage.Storage
@@ -61,6 +62,10 @@ func (mock MockClient) Data() [][]byte {
 
 func (mock MockClient) Body() []string {
 	return mock.body
+}
+
+func (mock MockClient) Header() string {
+	return mock.header
 }
 
 func (mock MockClient) DataRaw() RawRequest {

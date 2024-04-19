@@ -38,7 +38,7 @@ func (ch AclHandler) Handle(r IClientRequest) {
 type aclService struct{}
 
 func (aclService) deluser(r IClientRequest) error {
-	data := r.DataRaw().ReadArray()
+	data := r.Body()
 	delCount := 0
 
 	for _, u := range data[1:] {

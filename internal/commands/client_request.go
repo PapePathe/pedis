@@ -18,9 +18,8 @@ type IClientRequest interface {
 	WriteOK() error
 	WriteNil() error
 	Write([]byte) (int, error)
-	Data() [][]byte
+	Header() string
 	Body() []string
-	DataRaw() RawRequest
 	Store() storage.Storage
 	SendClusterConfigChange(raftpb.ConfChange)
 }
@@ -29,6 +28,12 @@ type RawRequest []byte
 
 func (r RawRequest) String() string {
 	return fmt.Sprintf("%q", string(r))
+}
+
+func (r RawRequest) ReadHeader() string {
+	items := bytes.Split(r[2:], []byte{13, 10})
+
+	return string(items[2])
 }
 
 func (r RawRequest) ReadArray() []string {
@@ -60,23 +65,26 @@ func SliceAsChunks(slice [][]byte, chunkSize int) [][][]byte {
 	return chunks
 }
 
-
 type ClientRequest struct {
 	Conn               net.Conn
-	data               [][]byte
-	body []string
-	dataRaw            RawRequest
+	body               []string
+	header             string
 	store              storage.Storage
 	clusterChangesChan chan<- raftpb.ConfChange
 }
 
-func NewClientRequest(c net.Conn, d [][]byte, s storage.Storage, rd RawRequest, body []string, cchan chan<- raftpb.ConfChange) IClientRequest {
+func NewClientRequest(
+	c net.Conn,
+	s storage.Storage,
+	body []string,
+	header string,
+	cchan chan<- raftpb.ConfChange,
+) IClientRequest {
 	return ClientRequest{
 		Conn:               c,
-		data:               d,
 		store:              s,
-		dataRaw:            rd,
-    body: body,
+		body:               body,
+		header:             header,
 		clusterChangesChan: cchan,
 	}
 
@@ -86,16 +94,12 @@ func (c ClientRequest) SendClusterConfigChange(cc raftpb.ConfChange) {
 	c.clusterChangesChan <- cc
 }
 
-func (c ClientRequest) Data() [][]byte {
-	return c.data
-}
-
 func (c ClientRequest) Body() []string {
 	return c.body
 }
 
-func (c ClientRequest) DataRaw() RawRequest {
-	return c.dataRaw
+func (c ClientRequest) Header() string {
+	return c.header
 }
 
 func (c ClientRequest) Store() storage.Storage {

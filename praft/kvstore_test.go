@@ -28,7 +28,6 @@ import (
 
 func initClientAndServer(t *testing.T, port int) (*PedisServer, *redis.Client) {
 	storageProposeChan := make(chan storage.StorageData)
-
 	store := storage.NewSimpleStorage(storageProposeChan)
 	store.SetUser("pedis", []storage.AclRule{
 		{Type: storage.AclActivateUser},

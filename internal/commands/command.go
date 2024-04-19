@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 )
@@ -36,8 +35,7 @@ func DefaultRequestHandler() *RequestHandler {
 }
 
 func (s RequestHandler) Run(request IClientRequest) {
-	log.Println("RedisCommand", request.DataRaw().String(), "PedisParams", request.DataRaw().ReadArray())
-	subcommand := strings.ToLower(string(request.Data()[2]))
+	subcommand := strings.ToLower(request.Header())
 
 	if h, ok := s.subcommands[subcommand]; ok {
 		if err := h.Authorize(request); err != nil {
@@ -50,7 +48,7 @@ func (s RequestHandler) Run(request IClientRequest) {
 		case "client":
 			request.WriteString("OK")
 		default:
-			request.WriteError(fmt.Sprintf("command not supported %v", subcommand))
+			request.WriteError(fmt.Sprintf("command (%v) not supported", subcommand))
 		}
 	}
 }
