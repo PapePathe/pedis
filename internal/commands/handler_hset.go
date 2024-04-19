@@ -23,7 +23,13 @@ func (ch HSetHandler) Persistent(IClientRequest) bool {
 }
 
 func (ch HSetHandler) Handle(r IClientRequest) {
-	hs := chunkSlice(r.Data()[5:], 4)
+	body := r.Body()
+
+	if len(body) < 2 {
+		r.WriteError("you must provide values")
+	}
+
+	hs := chunkSlice(body[1:], 2)
 
 	data, err := hs.ToBytes()
 
@@ -32,7 +38,7 @@ func (ch HSetHandler) Handle(r IClientRequest) {
 		return
 	}
 
-	_, err = r.Store().HSet(string(r.Data()[4]), data, 0)
+	_, err = r.Store().HSet(string(body[0]), data, 0)
 
 	if err != nil {
 		r.WriteError(err.Error())
@@ -40,20 +46,20 @@ func (ch HSetHandler) Handle(r IClientRequest) {
 	}
 
 	_ = hs.FromBytes(data)
-	_, _ = r.Write([]byte(fmt.Sprintf(":%d\r\n", hs.Len())))
+	_ = r.WriteNumber(fmt.Sprintf("%d", hs.Len()))
 }
 
-type hasharray [][]byte
+type hasharray []string
 
 func (ha hasharray) Key() string {
-	return string(ha[1])
+	return ha[0]
 }
 
 func (ha hasharray) Value() string {
-	if len(ha) < 4 {
+	if len(ha) < 2 {
 		return ""
 	}
-	return string(ha[3])
+	return ha[1]
 }
 
 func (ha hasharray) String() string {
@@ -125,8 +131,8 @@ func (hs *hset) FromBytes(data []byte) error {
 	return nil
 }
 
-func chunkSlice(slice [][]byte, chunkSize int) hset {
-	var chunks hset
+func chunkSlice(slice []string, chunkSize int) hset {
+	var chunks hset 
 
 	for i := 0; i < len(slice); i += chunkSize {
 		end := i + chunkSize
