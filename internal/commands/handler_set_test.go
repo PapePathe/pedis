@@ -2,7 +2,6 @@ package commands
 
 import(
   "testing"
-  "fmt"
   "github.com/stretchr/testify/assert"
   "pedis/internal/storage"
 )
@@ -21,16 +20,36 @@ func TestSetHandler(t *testing.T)  {
   }
   tests := []*settest{
     { 
-      name: "get a key that does not exist",
+      name: "set a key with expiration date",
       req: &MockClient{
-        body: []string{ "key:404", "a value", "ex", "1000" },
-        store: storage.MockStorage{
-          GetFn: func(k string) (string, error){
-            return "", fmt.Errorf("key %s not found", k)
-          },
-        },
+        body: []string{ "key:with:exp", "a value", "ex", "1000" },
+        store: storage.MockStorage{},
       },
       rep: []string{"OK"},
+    },
+   { 
+      name: "set with an empty key",
+      req: &MockClient{
+        body: []string{ "" },
+        store: storage.MockStorage{ },
+      },
+      err: []string{"key is empty"},
+    },
+   { 
+      name: "set with an no value",
+      req: &MockClient{
+        body: []string{ "key:xxx" },
+        store: storage.MockStorage{ },
+      },
+      err: []string{"value is required"},
+    },
+    { 
+      name: "set with an empty value",
+      req: &MockClient{
+        body: []string{ "key:xxx", "" },
+        store: storage.MockStorage{ },
+      },
+      err: []string{"value is empty"},
     },
   } 
 

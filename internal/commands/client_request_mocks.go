@@ -12,12 +12,13 @@ var (
 )
 
 type MockClient struct {
-	r        RawRequest
-	d        [][]byte
-	body        []string
-	response []string
-	errors   []string
-  store  storage.Storage
+	r          RawRequest
+	d          [][]byte
+	body       []string
+	response   []string
+	errors     []string
+	store      storage.Storage
+	confChange raftpb.ConfChange
 }
 
 func (mock *MockClient) WriteError(e string) error {
@@ -26,12 +27,12 @@ func (mock *MockClient) WriteError(e string) error {
 }
 
 func (mock *MockClient) WriteString(s string) error {
-	mock.response = []string{s} 
+	mock.response = []string{s}
 	return nil
 }
 
 func (mock *MockClient) WriteNumber(s string) error {
-	mock.response = []string{s} 
+	mock.response = []string{s}
 	return nil
 }
 
@@ -67,9 +68,9 @@ func (mock MockClient) DataRaw() RawRequest {
 }
 
 func (mock MockClient) Store() storage.Storage {
-  return mock.store
+	return mock.store
 }
 
-func (mock MockClient) SendClusterConfigChange(raftpb.ConfChange) {
-	panic("mock caller must provide implementation of SendClusterConfigChange()")
+func (mock *MockClient) SendClusterConfigChange(cfg raftpb.ConfChange) {
+	mock.confChange = cfg
 }

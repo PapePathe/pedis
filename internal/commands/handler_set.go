@@ -20,13 +20,16 @@ func (ch SetHandler) Persistent(IClientRequest) bool {
 
 func (ch SetHandler) Handle(r IClientRequest) {
   body := r.Body()
-
-
 	key := body[0] 
 	if len(key) == 0 {
 		_ = r.WriteError("key is empty")
 		return
 	}
+
+  if len(body) < 2 {
+		_ = r.WriteError("value is required")
+    return
+  }
 
 	value := body[1] 
 	if len(value) == 0 {
